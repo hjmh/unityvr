@@ -3,7 +3,7 @@
 import pandas as pd
 
 def openUnityLog(dirName, fileName):
-    
+    '''load json log file'''
     import json
     from os.path import sep
     
@@ -15,3 +15,68 @@ def openUnityLog(dirName, fileName):
     data = json.load(f)
     
     return data
+
+
+# Functions for extracting data from log file and converting it to pandas dataframe
+def objDfFromLog(dat):
+    objDfCols = ['name','collider','px','py','pz','rx','ry','rz','sx','sy','sz']
+    
+    objDf = pd.DataFrame(columns=objDfCols)
+
+    nlines = sum(1 for line in dat)
+
+    for l in range(nlines):
+        line = dat[l]['data']
+        if('meshGameObjectPath' in line.keys()):
+            framedat = {'name': line['meshGameObjectPath'], 
+                        'collider': line['colliderType'], 
+                        'px': line['worldPosition']['x'], 
+                        'py': line['worldPosition']['z'],
+                        'pz': line['worldPosition']['y'],
+                        'rx': line['worldRotationDegs']['x'], 
+                        'ry': line['worldRotationDegs']['z'],
+                        'rz': line['worldRotationDegs']['y'],
+                        'sx': line['worldScale']['x'], 
+                        'sy': line['worldScale']['z'],
+                        'sz': line['worldScale']['y']}
+            objDf = objDf.append(framedat, ignore_index = True)
+            
+    return objDf
+
+def posDfFromLog(dat):
+    posDfCols = ['frame','time','x','y','angle']
+    
+    posDf = pd.DataFrame(columns=posDfCols)
+    
+    nlines = sum(1 for line in dat)
+    
+    for l in range(nlines):
+        line = dat[l]['data']
+        if( 'worldPosition' in line.keys() and not 'meshGameObjectPath' in line.keys() ):
+            framedat = {'frame': dat[l]['frame'], 
+                        'time': dat[l]['timeSecs'], 
+                        'x': line['worldPosition']['x'], 
+                        'y': line['worldPosition']['z'],
+                        'angle': line['worldRotationDegs']['y']}
+            posDf = posDf.append(framedat, ignore_index = True)
+            
+    return posDf
+
+
+def ftDfFromLog(dat):
+    ftDfCols = ['frame','ficTracTReadMs','ficTracTWriteMs','dx','dy','dz']
+
+    ftDf = pd.DataFrame(columns=ftDfCols)
+    
+    nlines = sum(1 for line in dat)
+    for l in range(nlines):
+        lines = dat[l]['data']
+        if( 'ficTracDeltaRotationVectorLab' in lines.keys() ):
+            framedat = {'frame': dat[l]['frame'], 
+                        'ficTracTReadMs': lines['ficTracTimestampReadMs'], 
+                        'ficTracTWriteMs': lines['ficTracTimestampWriteMs'], 
+                        'dx': lines['ficTracDeltaRotationVectorLab']['x'], 
+                        'dy': lines['ficTracDeltaRotationVectorLab']['y'],
+                        'dz': lines['ficTracDeltaRotationVectorLab']['z']}
+            ftDf = ftDf.append(framedat, ignore_index = True)
+    return ftDf
