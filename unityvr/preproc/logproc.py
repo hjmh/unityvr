@@ -2,6 +2,12 @@
 
 import pandas as pd
 
+#dataframe column defs
+objDfCols = ['name','collider','px','py','pz','rx','ry','rz','sx','sy','sz']
+
+posDfCols = ['frame','time','x','y','angle']
+ftDfCols = ['frame','ficTracTReadMs','ficTracTWriteMs','dx','dy','dz']
+
 def openUnityLog(dirName, fileName):
     '''load json log file'''
     import json
@@ -19,8 +25,6 @@ def openUnityLog(dirName, fileName):
 
 # Functions for extracting data from log file and converting it to pandas dataframe
 def objDfFromLog(dat):
-    objDfCols = ['name','collider','px','py','pz','rx','ry','rz','sx','sy','sz']
-    
     objDf = pd.DataFrame(columns=objDfCols)
 
     nlines = sum(1 for line in dat)
@@ -43,9 +47,7 @@ def objDfFromLog(dat):
             
     return objDf
 
-def posDfFromLog(dat):
-    posDfCols = ['frame','time','x','y','angle']
-    
+def posDfFromLog(dat):    
     posDf = pd.DataFrame(columns=posDfCols)
     
     nlines = sum(1 for line in dat)
@@ -59,13 +61,11 @@ def posDfFromLog(dat):
                         'y': line['worldPosition']['z'],
                         'angle': line['worldRotationDegs']['y']}
             posDf = posDf.append(framedat, ignore_index = True)
-            
+    posDf.time = posDf.time-posDf.time[0]
     return posDf
 
 
 def ftDfFromLog(dat):
-    ftDfCols = ['frame','ficTracTReadMs','ficTracTWriteMs','dx','dy','dz']
-
     ftDf = pd.DataFrame(columns=ftDfCols)
     
     nlines = sum(1 for line in dat)
@@ -79,4 +79,6 @@ def ftDfFromLog(dat):
                         'dy': lines['ficTracDeltaRotationVectorLab']['y'],
                         'dz': lines['ficTracDeltaRotationVectorLab']['z']}
             ftDf = ftDf.append(framedat, ignore_index = True)
+    ftDf.ficTracTReadMs = ftDf.ficTracTReadMs-ftDf.ficTracTReadMs[0]
+    ftDf.ficTracTWriteMs = ftDf.ficTracTWriteMs-ftDf.ficTracTWriteMs[0]
     return ftDf
