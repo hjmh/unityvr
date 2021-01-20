@@ -73,7 +73,7 @@ def constructUnityVRexperiment(dirName,fileName):
     
     metadat = makeMetaDict(dat, fileName)
     objDf = objDfFromLog(dat)
-    posDf,ftDf = timeseriesDfFromLog(dat)
+    posDf, ftDf, tsDf = timeseriesDfFromLog(dat)
 
     uvrexperiment = unityVRexperiment(metadata=metadat,posDf=posDf,ftDf=ftDf,objDf=objDf)
     
