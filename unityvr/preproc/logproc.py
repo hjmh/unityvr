@@ -11,100 +11,10 @@ objDfCols = ['name','collider','px','py','pz','rx','ry','rz','sx','sy','sz']
 
 posDfCols = ['frame','time','x','y','angle']
 ftDfCols = ['frame','ficTracTReadMs','ficTracTWriteMs','dx','dy','dz']
-
-def openUnityLog(dirName, fileName):
-    '''load json log file'''
-    import json
-    from os.path import sep
-    
-    # Opening JSON file 
-    f = open(sep.join([dirName, fileName]),) 
-
-    # returns JSON object as  
-    # a dictionary 
-    data = json.load(f)
-    
-    return data
-
-
-# Functions for extracting data from log file and converting it to pandas dataframe
-
-def objDfFromLog(dat):
-    objDf = pd.DataFrame(columns=objDfCols)
-
-    nlines = sum(1 for line in dat)
-
-    for l in range(nlines):
-        if 'data' in dat[l].keys(): 
-            line = dat[l]['data']
-        else:
-            line = dat[l]
-        if('meshGameObjectPath' in line.keys()):
-            framedat = {'name': line['meshGameObjectPath'], 
-                        'collider': line['colliderType'], 
-                        'px': line['worldPosition']['x'], 
-                        'py': line['worldPosition']['z'],
-                        'pz': line['worldPosition']['y'],
-                        'rx': line['worldRotationDegs']['x'], 
-                        'ry': line['worldRotationDegs']['z'],
-                        'rz': line['worldRotationDegs']['y'],
-                        'sx': line['worldScale']['x'], 
-                        'sy': line['worldScale']['z'],
-                        'sz': line['worldScale']['y']}
-            objDf = objDf.append(framedat, ignore_index = True)
-            
-    return objDf
-
-def timeseriesDfFromLog(dat):    
-    posDf = pd.DataFrame(columns=posDfCols)
-    ftDf = pd.DataFrame(columns=ftDfCols)
-    
-    # add 3rd timeseries with deltaTime? Or merge onto one?
-
-    nlines = sum(1 for line in dat)
-    
-    for l in range(nlines):
-        if 'data' in dat[l].keys(): 
-            line = dat[l]['data']
-        else:
-            line = dat[l]
-            
-        if( 'worldPosition' in line.keys() and not 'meshGameObjectPath' in line.keys() ):
-            framedat = {'frame': dat[l]['frame'], 
-                        'time': dat[l]['timeSecs'], 
-                        'x': line['worldPosition']['x'], 
-                        'y': line['worldPosition']['z'],
-                        'angle': line['worldRotationDegs']['y'],
-                        'dx':line['actualTranslation']['x'],
-                        'dy':line['actualTranslation']['z'],
-                        'dxattempt': line['attemptedTranslation']['x'],
-                        'dyattempt': line['attemptedTranslation']['z']
-                       }
-            posDf = posDf.append(framedat, ignore_index = True)
-            
-        if( 'ficTracDeltaRotationVectorLab' in line.keys() ):
-            framedat = {'frame': dat[l]['frame'], 
-                        'ficTracTReadMs': line['ficTracTimestampReadMs'], 
-                        'ficTracTWriteMs': line['ficTracTimestampWriteMs'], 
-                        'dx': line['ficTracDeltaRotationVectorLab']['x'], 
-                        'dy': line['ficTracDeltaRotationVectorLab']['y'],
-                        'dz': line['ficTracDeltaRotationVectorLab']['z']}
-            ftDf = ftDf.append(framedat, ignore_index = True)
-            
-    posDf.time = posDf.time-posDf.time[0]
-    
-    ftDf.ficTracTReadMs = ftDf.ficTracTReadMs-ftDf.ficTracTReadMs[0]
-    ftDf.ficTracTWriteMs = ftDf.ficTracTWriteMs-ftDf.ficTracTWriteMs[0]
-    
-    return posDf, ftDf
-
+dtDfCols = ['frame','time','dt']
+pdDfCols = ['frame','time','pdsig']
 
 # Data class definition
-
-objDfCols = ['name','collider','px','py','pz','rx','ry','rz','sx','sy','sz']
-
-posDfCols = ['frame','time','x','y','angle']
-ftDfCols = ['frame','ficTracTReadMs','ficTracTWriteMs','dx','dy','dz']
 
 @dataclass
 class unityVRexperiment:
@@ -211,3 +121,103 @@ def makeMetaDict(dat, fileName):
     
     return metadata
     
+    
+def openUnityLog(dirName, fileName):
+    '''load json log file'''
+    import json
+    from os.path import sep
+    
+    # Opening JSON file 
+    f = open(sep.join([dirName, fileName]),) 
+
+    # returns JSON object as  
+    # a dictionary 
+    data = json.load(f)
+    
+    return data
+
+
+# Functions for extracting data from log file and converting it to pandas dataframe
+
+def objDfFromLog(dat):
+    objDf = pd.DataFrame(columns=objDfCols)
+
+    nlines = sum(1 for line in dat)
+
+    for l in range(nlines):
+        if 'data' in dat[l].keys(): 
+            line = dat[l]['data']
+        else:
+            line = dat[l]
+        if('meshGameObjectPath' in line.keys()):
+            framedat = {'name': line['meshGameObjectPath'], 
+                        'collider': line['colliderType'], 
+                        'px': line['worldPosition']['x'], 
+                        'py': line['worldPosition']['z'],
+                        'pz': line['worldPosition']['y'],
+                        'rx': line['worldRotationDegs']['x'], 
+                        'ry': line['worldRotationDegs']['z'],
+                        'rz': line['worldRotationDegs']['y'],
+                        'sx': line['worldScale']['x'], 
+                        'sy': line['worldScale']['z'],
+                        'sz': line['worldScale']['y']}
+            objDf = objDf.append(framedat, ignore_index = True)
+            
+    return objDf
+
+def timeseriesDfFromLog(dat):    
+    posDf = pd.DataFrame(columns=posDfCols)
+    ftDf = pd.DataFrame(columns=ftDfCols)
+    dtDf = pd.DataFrame(columns=dtDfCols)
+    pdDf = pd.DataFrame(columns=pdDfCols)
+    # add 3rd timeseries with deltaTime? Or merge onto one?
+
+    nlines = sum(1 for line in dat)
+    
+    for l in range(nlines):
+        line = dat[l]
+            
+        if( 'worldPosition' in line.keys() and not 'meshGameObjectPath' in line.keys() ):
+            framedat = {'frame': line['frame'], 
+                        'time': line['timeSecs'], 
+                        'x': line['worldPosition']['x'], 
+                        'y': line['worldPosition']['z'],
+                        'angle': line['worldRotationDegs']['y'],
+                        'dx':line['actualTranslation']['x'],
+                        'dy':line['actualTranslation']['z'],
+                        'dxattempt': line['attemptedTranslation']['x'],
+                        'dyattempt': line['attemptedTranslation']['z']
+                       }
+            posDf = posDf.append(framedat, ignore_index = True)
+            
+        if( 'ficTracDeltaRotationVectorLab' in line.keys() ):
+            framedat = {'frame': line['frame'], 
+                        'ficTracTReadMs': line['ficTracTimestampReadMs'], 
+                        'ficTracTWriteMs': line['ficTracTimestampWriteMs'], 
+                        'dx': line['ficTracDeltaRotationVectorLab']['x'], 
+                        'dy': line['ficTracDeltaRotationVectorLab']['y'],
+                        'dz': line['ficTracDeltaRotationVectorLab']['z']}
+            ftDf = ftDf.append(framedat, ignore_index = True)
+            
+        if( 'deltaTime' in line.keys() ):
+            framedat = {'frame': line['frame'], 
+                        'time': line['timeSecs'], 
+                        'dt': line['deltaTime']}
+            dtDf = dtDf.append(framedat, ignore_index = True)
+        
+        if( 'tracePD' in line.keys() ):
+            framedat = {'frame': line['frame'], 
+                        'time': line['timeSecs'], 
+                        'pdsig': line['tracePD']}
+            pdDf = pdDf.append(framedat, ignore_index = True)
+            
+    posDf.time = posDf.time-posDf.time[0]
+    dtDf.time = posDf.time-dtDf.time[0]
+    pdDf.time = pdDf.time-pdDf.time[0]
+    
+    ftDf.ficTracTReadMs = ftDf.ficTracTReadMs-ftDf.ficTracTReadMs[0]
+    ftDf.ficTracTWriteMs = ftDf.ficTracTWriteMs-ftDf.ficTracTWriteMs[0]
+    
+    tsDf = pd.merge(dtDf, pdDf, on="frame", how='outer').rename(columns={'time_x':'time'}).drop(['time_y'],axis=1)
+    
+    return posDf, ftDf, tsDf
