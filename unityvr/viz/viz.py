@@ -4,6 +4,7 @@ import matplotlib.patches as mpatches
 from matplotlib import patches
 import matplotlib.pyplot as plt
 import numpy as np
+from os.path import sep, isfile, exists
 
 def plotVRpathWithObjects(uvrExperiment,limx,limy, myfigsize):
 
