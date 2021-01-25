@@ -60,13 +60,15 @@ class unityVRexperiment:
             
         # save metadata
         with open(sep.join([saveDir,saveName,'metadata.json']), 'w') as outfile:
-            json.dumps(self.metadata, indent=4)
+            json.dump(self.metadata, outfile,indent=4)
         
         # save dataframes
         self.objDf.to_csv(sep.join([saveDir,saveName,'objDf.csv']))
         self.posDf.to_csv(sep.join([saveDir,saveName,'posDf.csv']))
         self.ftDf.to_csv(sep.join([saveDir,saveName,'ftDf.csv']))
         self.nidDf.to_csv(sep.join([saveDir,saveName,'nidDf.csv']))
+        
+        return saveDir, saveName
 
         
 # constructor for unityVRexperiment
@@ -77,6 +79,20 @@ def constructUnityVRexperiment(dirName,fileName):
     metadat = makeMetaDict(dat, fileName)
     objDf = objDfFromLog(dat)
     posDf, ftDf, nidDf = timeseriesDfFromLog(dat)
+
+    uvrexperiment = unityVRexperiment(metadata=metadat,posDf=posDf,ftDf=ftDf,nidDf=nidDf,objDf=objDf)
+    
+    return uvrexperiment
+
+
+def loadUVRData(savepath,savename):
+    
+    with open(sep.join([savepath,savename,'metadata.json'])) as json_file:
+        metadat = json.load(json_file)
+    objDf = pd.read_csv(sep.join([savepath,savename,'objDf.csv'])).drop(columns=['Unnamed: 0'])
+    posDf = pd.read_csv(sep.join([savepath,savename,'posDf.csv'])).drop(columns=['Unnamed: 0'])
+    ftDf = pd.read_csv(sep.join([savepath,savename,'ftDf.csv'])).drop(columns=['Unnamed: 0'])
+    nidDf = pd.read_csv(sep.join([savepath,savename,'nidDf.csv'])).drop(columns=['Unnamed: 0'])
 
     uvrexperiment = unityVRexperiment(metadata=metadat,posDf=posDf,ftDf=ftDf,nidDf=nidDf,objDf=objDf)
     
