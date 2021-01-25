@@ -16,8 +16,8 @@ def plotVRpathWithObjects(uvrExperiment,limx,limy, myfigsize):
     ax.scatter(uvrExperiment.posDf['x'], uvrExperiment.posDf['y'],s=7,c=uvrExperiment.posDf['time'],cmap='viridis')
     
     if np.isfinite(limx[0]):
-        ax.set_ylim(limx[0], limx[1])
-        ax.set_xlim(limy[0], limy[1])
+        ax.set_xlim(limx[0], limx[1])
+        ax.set_ylim(limy[0], limy[1])
     ax.set_aspect('equal')
     
     return fig
