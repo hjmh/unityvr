@@ -13,7 +13,7 @@ objDfCols = ['name','collider','px','py','pz','rx','ry','rz','sx','sy','sz']
 posDfCols = ['frame','time','x','y','angle']
 ftDfCols = ['frame','ficTracTReadMs','ficTracTWriteMs','dx','dy','dz']
 dtDfCols = ['frame','time','dt']
-nidDfCols = ['frame','time','dt','pdsig']
+nidDfCols = ['frame','time','dt','pdsig','imgfsig']
 
 # Data class definition
 
@@ -180,7 +180,7 @@ def timeseriesDfFromLog(dat):
     posDf = pd.DataFrame(columns=posDfCols)
     ftDf = pd.DataFrame(columns=ftDfCols)
     dtDf = pd.DataFrame(columns=dtDfCols)
-    pdDf = pd.DataFrame(columns = ['frame','time','pdsig'])
+    pdDf = pd.DataFrame(columns = ['frame','time','pdsig', 'imgfsig'])
     # add 3rd timeseries with deltaTime? Or merge onto one?
 
     nlines = sum(1 for line in dat)
@@ -219,7 +219,8 @@ def timeseriesDfFromLog(dat):
         if( 'tracePD' in line.keys() ):
             framedat = {'frame': line['frame'], 
                         'time': line['timeSecs'], 
-                        'pdsig': line['tracePD']}
+                        'pdsig': line['tracePD'],
+                        'imgfsig': line['imgFrameTrigger']}
             pdDf = pdDf.append(framedat, ignore_index = True)
             
     posDf.time = posDf.time-posDf.time[0]
@@ -236,6 +237,10 @@ def timeseriesDfFromLog(dat):
     nidDf["pdFilt"]  = nidDf.pdsig.values
     nidDf.pdFilt[np.isfinite(nidDf.pdsig)] = medfilt(nidDf.pdsig[np.isfinite(nidDf.pdsig)])
     nidDf["pdThresh"]  = 1*(np.asarray(nidDf.pdFilt>=np.nanmedian(nidDf.pdFilt.values)))
+    
+    nidDf["imgfFilt"]  = nidDf.imgfsig.values
+    nidDf.imgfFilt[np.isfinite(nidDf.imgfsig)] = medfilt(nidDf.imgfsig[np.isfinite(nidDf.imgfsig)])
+    nidDf["imgfThresh"]  = 1*(np.asarray(nidDf.imgfFilt>=np.nanmedian(nidDf.imgfFilt.values)))
     
     nidDf = generateInterTime(nidDf)
     
