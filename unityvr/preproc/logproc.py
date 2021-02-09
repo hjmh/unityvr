@@ -47,28 +47,23 @@ class unityVRexperiment:
         return frameftDf
     
     
-    def saveData(self, saveDir):
-        
-        saveName = '_'.join([self.metadata['genotype'],'fly'+str(self.metadata['flyid']),
-                             self.metadata['date'],self.metadata['time']])
-        
-        saveDir = sep.join([saveDir,self.metadata['expid']])
+    def saveData(self, saveDir, saveName):
+        savepath = sep.join([saveDir,saveName, 'uvr'])
         # make directory
-        if not exists(sep.join([saveDir,saveName])):
-            makedirs(sep.join([saveDir,saveName]))
-            
+        if not exists(savepath):
+            makedirs(savepath)
             
         # save metadata
-        with open(sep.join([saveDir,saveName,'metadata.json']), 'w') as outfile:
+        with open(sep.join([savepath,'metadata.json']), 'w') as outfile:
             json.dump(self.metadata, outfile,indent=4)
         
         # save dataframes
-        self.objDf.to_csv(sep.join([saveDir,saveName,'objDf.csv']))
-        self.posDf.to_csv(sep.join([saveDir,saveName,'posDf.csv']))
-        self.ftDf.to_csv(sep.join([saveDir,saveName,'ftDf.csv']))
-        self.nidDf.to_csv(sep.join([saveDir,saveName,'nidDf.csv']))
+        self.objDf.to_csv(sep.join([savepath,'objDf.csv']))
+        self.posDf.to_csv(sep.join([savepath,'posDf.csv']))
+        self.ftDf.to_csv(sep.join([savepath,'ftDf.csv']))
+        self.nidDf.to_csv(sep.join([savepath,'nidDf.csv']))
         
-        return saveDir, saveName
+        return savepath
 
         
 # constructor for unityVRexperiment
@@ -85,14 +80,14 @@ def constructUnityVRexperiment(dirName,fileName):
     return uvrexperiment
 
 
-def loadUVRData(savepath,savename):
+def loadUVRData(savepath):
     
-    with open(sep.join([savepath,savename,'metadata.json'])) as json_file:
+    with open(sep.join([savepath,'metadata.json'])) as json_file:
         metadat = json.load(json_file)
-    objDf = pd.read_csv(sep.join([savepath,savename,'objDf.csv'])).drop(columns=['Unnamed: 0'])
-    posDf = pd.read_csv(sep.join([savepath,savename,'posDf.csv'])).drop(columns=['Unnamed: 0'])
-    ftDf = pd.read_csv(sep.join([savepath,savename,'ftDf.csv'])).drop(columns=['Unnamed: 0'])
-    nidDf = pd.read_csv(sep.join([savepath,savename,'nidDf.csv'])).drop(columns=['Unnamed: 0'])
+    objDf = pd.read_csv(sep.join([savepath,'objDf.csv'])).drop(columns=['Unnamed: 0'])
+    posDf = pd.read_csv(sep.join([savepath,'posDf.csv'])).drop(columns=['Unnamed: 0'])
+    ftDf = pd.read_csv(sep.join([savepath,'ftDf.csv'])).drop(columns=['Unnamed: 0'])
+    nidDf = pd.read_csv(sep.join([savepath,'nidDf.csv'])).drop(columns=['Unnamed: 0'])
 
     uvrexperiment = unityVRexperiment(metadata=metadat,posDf=posDf,ftDf=ftDf,nidDf=nidDf,objDf=objDf)
     
@@ -115,7 +110,7 @@ def makeMetaDict(dat, fileName):
         headerNotes = dat[0]['headerNotes']
         metadat = parseHeader(headerNotes, headerwords, metadat)
 
-    [datestr, timestr] = fileName.split('.')[0].split('_')[1:]
+    [trial, datestr, timestr] = fileName.split('.')[0].split('_')[-3:]
     
     metadata = {
         'expid': metadat[0].strip(),
@@ -123,6 +118,7 @@ def makeMetaDict(dat, fileName):
         'genotype': metadat[2].strip(),
         'sex': metadat[4].strip(),
         'flyid': metadat[3].strip(),
+        'trial': trial,
         'date': datestr,
         'time': timestr,
         'notes': metadat[5].strip()
