@@ -98,7 +98,7 @@ def parseHeader(notes, headerwords, metadat):
     
     for i, hw in enumerate(headerwords[:-1]):
         if hw in notes:
-            metadat[i] = notes[notes.find(hw)+len(hw)+1:notes.find(headerwords[i+1])].split('-')[0]
+            metadat[i] = notes[notes.find(hw)+len(hw)+1:notes.find(headerwords[i+1])].split('~')[0].strip()
             
     return metadat
 
@@ -110,19 +110,19 @@ def makeMetaDict(dat, fileName):
         headerNotes = dat[0]['headerNotes']
         metadat = parseHeader(headerNotes, headerwords, metadat)
 
-    [trial, datestr, timestr] = fileName.split('.')[0].split('_')[-3:]
+    [datestr, timestr] = fileName.split('.')[0].split('_')[1:3]
     
     metadata = {
-        'expid': metadat[0].strip(),
-        'experiment': metadat[1].strip(),
-        'genotype': metadat[2].strip(),
-        'sex': metadat[4].strip(),
-        'flyid': metadat[3].strip(),
-        'trial': trial,
+        'expid': metadat[0],
+        'experiment': metadat[1],
+        'genotype': metadat[2],
+        'sex': metadat[4],
+        'flyid': metadat[3],
+        'trial': 'trial'+fileName.split('.')[0].split('_')[-1][1:],
         'date': datestr,
         'time': timestr,
-        'notes': metadat[5].strip()
-    }
+        'notes': metadat[5]
+    } 
     
     return metadata
     
@@ -133,7 +133,7 @@ def openUnityLog(dirName, fileName):
     from os.path import sep
     
     # Opening JSON file 
-    f = open(sep.join([dirName, fileName]),) 
+    f = open(sep.join([dirName, fileName])) 
 
     # returns JSON object as  
     # a dictionary 
@@ -145,30 +145,97 @@ def openUnityLog(dirName, fileName):
 # Functions for extracting data from log file and converting it to pandas dataframe
 
 def objDfFromLog(dat):
-    objDf = pd.DataFrame(columns=objDfCols)
-
-    nlines = sum(1 for line in dat)
-
-    for l in range(nlines):
-        if 'data' in dat[l].keys(): 
-            line = dat[l]['data']
-        else:
-            line = dat[l]
-        if('meshGameObjectPath' in line.keys()):
-            framedat = {'name': line['meshGameObjectPath'], 
-                        'collider': line['colliderType'], 
-                        'px': line['worldPosition']['x'], 
-                        'py': line['worldPosition']['z'],
-                        'pz': line['worldPosition']['y'],
-                        'rx': line['worldRotationDegs']['x'], 
-                        'ry': line['worldRotationDegs']['z'],
-                        'rz': line['worldRotationDegs']['y'],
-                        'sx': line['worldScale']['x'], 
-                        'sy': line['worldScale']['z'],
-                        'sz': line['worldScale']['y']}
-            objDf = objDf.append(framedat, ignore_index = True)
-            
+    # get dataframe with info about objects in vr
+    matching = [s for s in dat if "meshGameObjectPath" in s]
+    entries = [None]*len(matching)
+    for entry, match in enumerate(matching):
+        framedat = {'name': match['meshGameObjectPath'], 
+                    'collider': match['colliderType'], 
+                    'px': match['worldPosition']['x'], 
+                    'py': match['worldPosition']['z'],
+                    'pz': match['worldPosition']['y'],
+                    'rx': match['worldRotationDegs']['x'], 
+                    'ry': match['worldRotationDegs']['z'],
+                    'rz': match['worldRotationDegs']['y'],
+                    'sx': match['worldScale']['x'], 
+                    'sy': match['worldScale']['z'],
+                    'sz': match['worldScale']['y']}
+        entries[entry] = pd.Series(framedat).to_frame().T
+    objDf = pd.concat(entries,ignore_index = True)
+    
     return objDf
+
+
+def posDfFromLog(dat):
+    # get info about camera position in vr
+    matching = [s for s in dat if "attemptedTranslation" in s]    
+    entries = [None]*len(matching)
+    for entry, match in enumerate(matching):
+        framedat = {'frame': match['frame'], 
+                        'time': match['timeSecs'], 
+                        'x': match['worldPosition']['x'], 
+                        'y': match['worldPosition']['z'],
+                        'angle': match['worldRotationDegs']['y'],
+                        'dx':match['actualTranslation']['x'],
+                        'dy':match['actualTranslation']['z'],
+                        'dxattempt': match['attemptedTranslation']['x'],
+                        'dyattempt': match['attemptedTranslation']['z']
+                       }
+        entries[entry] = pd.Series(framedat).to_frame().T
+    posDf = pd.concat(entries,ignore_index = True)
+
+    return posDf
+
+
+def ftDfFromLog(dat):
+    # get fictrac data
+    matching = [s for s in dat if "ficTracDeltaRotationVectorLab" in s]
+    entries = [None]*len(matching)
+    for entry, match in enumerate(matching):
+        framedat = {'frame': match['frame'], 
+                        'ficTracTReadMs': match['ficTracTimestampReadMs'], 
+                        'ficTracTWriteMs': match['ficTracTimestampWriteMs'], 
+                        'dx': match['ficTracDeltaRotationVectorLab']['x'], 
+                        'dy': match['ficTracDeltaRotationVectorLab']['y'],
+                        'dz': match['ficTracDeltaRotationVectorLab']['z']}
+        entries[entry] = pd.Series(framedat).to_frame().T
+
+    if len(entries) > 0:
+        ftDf = pd.concat(entries, ignore_index = True)
+    else:
+        ftDf = pd.DataFrame()
+        
+    return ftDf
+
+def dtDfFromLog(dat):
+    # get delta time info
+    matching = [s for s in dat if "deltaTime" in s]
+    entries = [None]*len(matching)
+    for entry, match in enumerate(matching):
+        framedat = {'frame': match['frame'], 
+                    'time': match['timeSecs'], 
+                    'dt': match['deltaTime']}
+        entries[entry] = pd.Series(framedat).to_frame().T
+    dtDf = pd.concat(entries,ignore_index = True)
+            
+    return dtDf
+
+
+def pdDfFromLog(dat):
+    # get NiDaq signal
+    matching = [s for s in dat if "tracePD" in s]
+    entries = [None]*len(matching)
+    for entry, match in enumerate(matching):
+        framedat = {'frame': match['frame'], 
+                    'time': match['timeSecs'], 
+                    'pdsig': match['tracePD'],
+                    'imgfsig': match['imgFrameTrigger']}
+        
+        entries[entry] = pd.Series(framedat).to_frame().T
+    pdDf = pd.concat(entries,ignore_index = True)
+            
+    return pdDf
+
 
 def timeseriesDfFromLog(dat):
     from scipy.signal import medfilt
@@ -177,58 +244,23 @@ def timeseriesDfFromLog(dat):
     ftDf = pd.DataFrame(columns=ftDfCols)
     dtDf = pd.DataFrame(columns=dtDfCols)
     pdDf = pd.DataFrame(columns = ['frame','time','pdsig', 'imgfsig'])
-    # add 3rd timeseries with deltaTime? Or merge onto one?
 
-    nlines = sum(1 for line in dat)
+    posDf = posDfFromLog(dat)
+    ftDf = ftDfFromLog(dat)
+    dtDf = dtDfFromLog(dat)
+    pdDf = pdDfFromLog(dat)
     
-    for l in range(nlines):
-        line = dat[l]
-            
-        if( 'worldPosition' in line.keys() and not 'meshGameObjectPath' in line.keys() ):
-            framedat = {'frame': line['frame'], 
-                        'time': line['timeSecs'], 
-                        'x': line['worldPosition']['x'], 
-                        'y': line['worldPosition']['z'],
-                        'angle': line['worldRotationDegs']['y'],
-                        'dx':line['actualTranslation']['x'],
-                        'dy':line['actualTranslation']['z'],
-                        'dxattempt': line['attemptedTranslation']['x'],
-                        'dyattempt': line['attemptedTranslation']['z']
-                       }
-            posDf = posDf.append(framedat, ignore_index = True)
-            
-        if( 'ficTracDeltaRotationVectorLab' in line.keys() ):
-            framedat = {'frame': line['frame'], 
-                        'ficTracTReadMs': line['ficTracTimestampReadMs'], 
-                        'ficTracTWriteMs': line['ficTracTimestampWriteMs'], 
-                        'dx': line['ficTracDeltaRotationVectorLab']['x'], 
-                        'dy': line['ficTracDeltaRotationVectorLab']['y'],
-                        'dz': line['ficTracDeltaRotationVectorLab']['z']}
-            ftDf = ftDf.append(framedat, ignore_index = True)
-            
-        if( 'deltaTime' in line.keys() ):
-            framedat = {'frame': line['frame'], 
-                        'time': line['timeSecs'], 
-                        'dt': line['deltaTime']}
-            dtDf = dtDf.append(framedat, ignore_index = True)
-        
-        if( 'tracePD' in line.keys() ):
-            framedat = {'frame': line['frame'], 
-                        'time': line['timeSecs'], 
-                        'pdsig': line['tracePD'],
-                        'imgfsig': line['imgFrameTrigger']}
-            pdDf = pdDf.append(framedat, ignore_index = True)
             
     posDf.time = posDf.time-posDf.time[0]
     dtDf.time = dtDf.time-dtDf.time[0]
     pdDf.time = pdDf.time-pdDf.time[0]
     
-    ftDf.ficTracTReadMs = ftDf.ficTracTReadMs-ftDf.ficTracTReadMs[0]
-    ftDf.ficTracTWriteMs = ftDf.ficTracTWriteMs-ftDf.ficTracTWriteMs[0]
+    if len(ftDf) > 0:
+        ftDf.ficTracTReadMs = ftDf.ficTracTReadMs-ftDf.ficTracTReadMs[0]
+        ftDf.ficTracTWriteMs = ftDf.ficTracTWriteMs-ftDf.ficTracTWriteMs[0]
     
     posDf = pd.merge(dtDf, posDf, on="frame", how='outer').rename(columns={'time_x':'time'}).drop(['time_y'],axis=1)
     nidDf = pd.merge(dtDf, pdDf, on="frame", how='outer').rename(columns={'time_x':'time'}).drop(['time_y'],axis=1)
-
     
     nidDf["pdFilt"]  = nidDf.pdsig.values
     nidDf.pdFilt[np.isfinite(nidDf.pdsig)] = medfilt(nidDf.pdsig[np.isfinite(nidDf.pdsig)])
@@ -236,6 +268,7 @@ def timeseriesDfFromLog(dat):
     
     nidDf["imgfFilt"]  = nidDf.imgfsig.values
     nidDf.imgfFilt[np.isfinite(nidDf.imgfsig)] = medfilt(nidDf.imgfsig[np.isfinite(nidDf.imgfsig)])
+    # replace with .loc[:, ...]
     nidDf["imgfThresh"]  = 1*(np.asarray(nidDf.imgfFilt>=np.nanmedian(nidDf.imgfFilt.values)))
     
     nidDf = generateInterTime(nidDf)
