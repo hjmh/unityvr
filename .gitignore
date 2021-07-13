@@ -1,11 +1,8 @@
 .ipynb_checkpoints
 .DS_Store
-sample/
+sample/*
+!sample/Log_2021-05-13_22-25-48_SS96_x_7f_f01_EB_panA1_t01.json
+!sample/Log_2021-05-13_22-35-08_SS96_x_7f_f01_EB_panA2_t01.json
 *.pyc
-*.pyc
-unityvr/__pycache__/
-unityvr/preproc/__pycache__/
-*.pyc
-unityvr/__pycache__/__init__.cpython-38.pyc
-unityvr/preproc/__pycache__/logproc.cpython-38.pyc
-*.pyc
+unityvr/__pycache__/*
+unityvr/preproc/__pycache__/*
