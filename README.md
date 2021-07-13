@@ -17,4 +17,8 @@ I recommend using poetry to setup a custom conda environment. A helpful introduc
 2. Create conda environment: conda create --name unityvr python=3.8
 3. Activate environment: conda activate unityvr
 4. Make sure you are in the top folder of the cloned repo, then install dependencies: poetry install
-
+5. Setup the new environment as an ipython kernel:
+    conda install -c anaconda ipykernel
+    python -m ipykernel install --user --name=unityvr
+    
+Now you should be able to run the example notebooks in the **scripts** folder without problems. 
