@@ -1,7 +1,7 @@
 .ipynb_checkpoints
 .DS_Store
-sample/*
-!sample/sampleLog.json
+unityvr/sample/*
+!unityvr/sample/sampleLog.json
 *.pyc
 unityvr/__pycache__/*
 unityvr/preproc/__pycache__/*
