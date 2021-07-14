@@ -5,4 +5,4 @@ sample/*
 *.pyc
 unityvr/__pycache__/*
 unityvr/preproc/__pycache__/*
-__pycache__
+__pycache__/*
