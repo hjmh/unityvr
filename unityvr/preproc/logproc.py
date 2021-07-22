@@ -259,22 +259,23 @@ def timeseriesDfFromLog(dat):
     try:
         pdDf = pdDfFromLog(dat)
     except:
-        pdDf = None
         print("No analog input data was recorded.")
 
 
     posDf.time = posDf.time-posDf.time[0]
     dtDf.time = dtDf.time-dtDf.time[0]
-    if pdDf:
+    if len(posDf) > 0:
         pdDf.time = pdDf.time-pdDf.time[0]
 
     if len(ftDf) > 0:
         ftDf.ficTracTReadMs = ftDf.ficTracTReadMs-ftDf.ficTracTReadMs[0]
         ftDf.ficTracTWriteMs = ftDf.ficTracTWriteMs-ftDf.ficTracTWriteMs[0]
+    else:
+        print("No fictrac signal was recorded.")
 
     posDf = pd.merge(dtDf, posDf, on="frame", how='outer').rename(columns={'time_x':'time'}).drop(['time_y'],axis=1)
 
-    if posDf:
+    if len(posDf) > 0:
         nidDf = pd.merge(dtDf, pdDf, on="frame", how='outer').rename(columns={'time_x':'time'}).drop(['time_y'],axis=1)
 
         nidDf["pdFilt"]  = nidDf.pdsig.values
@@ -288,8 +289,8 @@ def timeseriesDfFromLog(dat):
 
         nidDf = generateInterTime(nidDf)
     else:
-        nidDf = None
-    
+        nidDf = posDf
+
     return posDf, ftDf, nidDf
 
 
