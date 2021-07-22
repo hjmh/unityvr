@@ -238,8 +238,8 @@ def pdDfFromLog(dat):
                     'time': match['timeSecs'],
                     'pdsig': match['tracePD'],
                     'imgfsig': match['imgFrameTrigger']}
-
         entries[entry] = pd.Series(framedat).to_frame().T
+
     pdDf = pd.concat(entries,ignore_index = True)
 
     return pdDf
@@ -256,31 +256,40 @@ def timeseriesDfFromLog(dat):
     posDf = posDfFromLog(dat)
     ftDf = ftDfFromLog(dat)
     dtDf = dtDfFromLog(dat)
-    pdDf = pdDfFromLog(dat)
+    try:
+        pdDf = pdDfFromLog(dat)
+    except:
+        pdDf = None
+        print("No analog input data was recorded.")
 
 
     posDf.time = posDf.time-posDf.time[0]
     dtDf.time = dtDf.time-dtDf.time[0]
-    pdDf.time = pdDf.time-pdDf.time[0]
+    if pdDf:
+        pdDf.time = pdDf.time-pdDf.time[0]
 
     if len(ftDf) > 0:
         ftDf.ficTracTReadMs = ftDf.ficTracTReadMs-ftDf.ficTracTReadMs[0]
         ftDf.ficTracTWriteMs = ftDf.ficTracTWriteMs-ftDf.ficTracTWriteMs[0]
 
     posDf = pd.merge(dtDf, posDf, on="frame", how='outer').rename(columns={'time_x':'time'}).drop(['time_y'],axis=1)
-    nidDf = pd.merge(dtDf, pdDf, on="frame", how='outer').rename(columns={'time_x':'time'}).drop(['time_y'],axis=1)
 
-    nidDf["pdFilt"]  = nidDf.pdsig.values
-    nidDf.pdFilt[np.isfinite(nidDf.pdsig)] = medfilt(nidDf.pdsig[np.isfinite(nidDf.pdsig)])
-    nidDf["pdThresh"]  = 1*(np.asarray(nidDf.pdFilt>=np.nanmedian(nidDf.pdFilt.values)))
+    if posDf:
+        nidDf = pd.merge(dtDf, pdDf, on="frame", how='outer').rename(columns={'time_x':'time'}).drop(['time_y'],axis=1)
 
-    nidDf["imgfFilt"]  = nidDf.imgfsig.values
-    nidDf.imgfFilt[np.isfinite(nidDf.imgfsig)] = medfilt(nidDf.imgfsig[np.isfinite(nidDf.imgfsig)])
-    # replace with .loc[:, ...]
-    nidDf["imgfThresh"]  = 1*(np.asarray(nidDf.imgfFilt>=np.nanmedian(nidDf.imgfFilt.values)))
+        nidDf["pdFilt"]  = nidDf.pdsig.values
+        nidDf.pdFilt[np.isfinite(nidDf.pdsig)] = medfilt(nidDf.pdsig[np.isfinite(nidDf.pdsig)])
+        nidDf["pdThresh"]  = 1*(np.asarray(nidDf.pdFilt>=np.nanmedian(nidDf.pdFilt.values)))
 
-    nidDf = generateInterTime(nidDf)
+        nidDf["imgfFilt"]  = nidDf.imgfsig.values
+        nidDf.imgfFilt[np.isfinite(nidDf.imgfsig)] = medfilt(nidDf.imgfsig[np.isfinite(nidDf.imgfsig)])
+        # replace with .loc[:, ...]
+        nidDf["imgfThresh"]  = 1*(np.asarray(nidDf.imgfFilt>=np.nanmedian(nidDf.imgfFilt.values)))
 
+        nidDf = generateInterTime(nidDf)
+    else:
+        nidDf = None
+    
     return posDf, ftDf, nidDf
 
 
