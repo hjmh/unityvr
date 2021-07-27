@@ -264,7 +264,7 @@ def timeseriesDfFromLog(dat):
 
     posDf.time = posDf.time-posDf.time[0]
     dtDf.time = dtDf.time-dtDf.time[0]
-    if len(posDf) > 0:
+    if len(pdDf) > 0:
         pdDf.time = pdDf.time-pdDf.time[0]
 
     if len(ftDf) > 0:
@@ -275,7 +275,7 @@ def timeseriesDfFromLog(dat):
 
     posDf = pd.merge(dtDf, posDf, on="frame", how='outer').rename(columns={'time_x':'time'}).drop(['time_y'],axis=1)
 
-    if len(posDf) > 0:
+    if len(pdDf) > 0:
         nidDf = pd.merge(dtDf, pdDf, on="frame", how='outer').rename(columns={'time_x':'time'}).drop(['time_y'],axis=1)
 
         nidDf["pdFilt"]  = nidDf.pdsig.values
