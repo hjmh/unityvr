@@ -244,6 +244,20 @@ def pdDfFromLog(dat):
 
     return pdDf
 
+def texDfFromLog(dat):
+    # get texture remapping log
+    matching = [s for s in dat if "xpos" in s]
+    entries = [None]*len(matching)
+    for entry, match in enumerate(matching):
+        framedat = {'frame': match['frame'],
+                    'time': match['timeSecs'],
+                    'xtex': match['xpos'],
+                    'ytex': match['ypos']}
+        entries[entry] = pd.Series(framedat).to_frame().T
+
+    texDf = pd.concat(entries,ignore_index = True)
+
+    return texDf
 
 def timeseriesDfFromLog(dat):
     from scipy.signal import medfilt
