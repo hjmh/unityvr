@@ -185,8 +185,8 @@ def posDfFromLog(dat):
         framedat = {'frame': match['frame'],
                         'time': match['timeSecs'],
                         'x': match['worldPosition']['x'],
-                        'y': match['worldPosition']['z'],
-                        'angle': match['worldRotationDegs']['y'],
+                        'y': match['worldPosition']['z'], #axes are named differently in Unity
+                        'angle': (-match['worldRotationDegs']['y'])%360, #flip due to left handed convention in Unity
                         'dx':match['actualTranslation']['x'],
                         'dy':match['actualTranslation']['z'],
                         'dxattempt': match['attemptedTranslation']['x'],
@@ -194,6 +194,7 @@ def posDfFromLog(dat):
                        }
         entries[entry] = pd.Series(framedat).to_frame().T
     posDf = pd.concat(entries,ignore_index = True)
+    print('correcting for Unity angle convention.')
 
     return posDf
 
