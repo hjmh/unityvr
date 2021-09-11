@@ -60,6 +60,7 @@ def flightSeg(posDf, thresh, freq=120, plot = False, plotsave=False, saveDir=Non
 
     _, t, F = sp.signal.spectrogram(df['ds'], freq)
 
+    # first row of spectrogram seems to contain sufficient frequency information
     flight = sp.interpolate.interp1d(t,F[1,:]>thresh, kind='nearest', bounds_error=False)
     df['flight'] = flight(df['time'])
 
