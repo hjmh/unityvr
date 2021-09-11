@@ -12,6 +12,7 @@ pandas = "^1.2.0"
 matplotlib = "^3.3.3"
 scipy = "^1.6.0"
 xarray = "^0.17.0"
+numpy-ext = "^0.9.5"
 
 [tool.poetry.dev-dependencies]
 
