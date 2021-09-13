@@ -5,7 +5,6 @@ import scipy as sp
 import scipy.signal
 
 import matplotlib.pyplot as plt
-import seaborn as sns
 
 from unityvr.preproc import logproc
 from unityvr.viz import viz
@@ -20,7 +19,9 @@ from scipy.optimize import curve_fit
 
 #obtain the position dataframe with derived quantities
 def position(uvrDat, derive = True, knownRdm = None, rotation=None):
-
+    #TODO: describe input arguments... move to analysis folder
+    # add argument for date
+    # rotation: angle (degrees) by which to rotated the trajectory
     posDf = uvrDat.posDf
 
     #angle correction
@@ -129,7 +130,6 @@ def flightClip(posDf, minT = 0, maxT = 485, plot = False, plotsave=False, saveDi
 
 #convert to shape space
 def shape(posDf, plot = False, step = None, plotsave=False, saveDir=None, uvrDat=None, interp='linear',stitch=False):
-
 
     if 'clipped' in posDf: posDf = carryAttrs(posDf.loc[posDf['clipped']==0], posDf)
     if 'flight' in posDf:

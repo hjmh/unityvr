@@ -48,7 +48,7 @@ class unityVRexperiment:
 
     def saveData(self, saveDir, saveName):
         savepath = sep.join([saveDir,saveName,'uvr'])
-    
+
         # make directory
         if not exists(savepath):
             makedirs(savepath)
