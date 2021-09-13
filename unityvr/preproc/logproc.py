@@ -47,8 +47,11 @@ class unityVRexperiment:
         return frameftDf
 
 
-    def saveData(self, saveDir, saveName):
-        savepath = sep.join([saveDir,saveName, 'uvr'])
+    def saveData(self, saveDir, saveName, imaging=True):
+        if imaging:
+            savepath = sep.join([saveDir,saveName,'uvr'])
+        else:
+            savepath = sep.join([saveDir,saveName])
         # make directory
         if not exists(savepath):
             makedirs(savepath)
@@ -64,10 +67,24 @@ class unityVRexperiment:
         self.nidDf.to_csv(sep.join([savepath,'nidDf.csv']))
 
         return savepath
+    
+    def saveShapeDf(self, saveDir, saveName, imaging=True):
+        if imaging:
+            savepath = sep.join([saveDir,saveName,'uvr'])
+        else:
+            savepath = sep.join([saveDir,saveName])
+        # make directory
+        if not exists(savepath):
+            makedirs(savepath)
+
+        # save dataframe
+        self.shapeDf.to_csv(sep.join([savepath,'shapeDf.csv']))
+
+        return savepath
 
 
 # constructor for unityVRexperiment
-def constructUnityVRexperiment(dirName,fileName):
+def constructUnityVRexperiment(dirName,fileName,imaging=False,test=False):
 
     dat = openUnityLog(dirName, fileName)
 
@@ -182,8 +199,8 @@ def posDfFromLog(dat):
         framedat = {'frame': match['frame'],
                         'time': match['timeSecs'],
                         'x': match['worldPosition']['x'],
-                        'y': match['worldPosition']['z'],
-                        'angle': match['worldRotationDegs']['y'],
+                        'y': match['worldPosition']['z'], #axes are named differently in Unity
+                        'angle': (-match['worldRotationDegs']['y'])%360, #flip due to left handed convention in Unity
                         'dx':match['actualTranslation']['x'],
                         'dy':match['actualTranslation']['z'],
                         'dxattempt': match['attemptedTranslation']['x'],
@@ -191,6 +208,7 @@ def posDfFromLog(dat):
                        }
         entries[entry] = pd.Series(framedat).to_frame().T
     posDf = pd.concat(entries,ignore_index = True)
+    print('correcting for Unity angle convention.')
 
     return posDf
 
@@ -258,6 +276,12 @@ def texDfFromLog(dat):
     texDf = pd.concat(entries,ignore_index = True)
 
     return texDf
+
+def ftTrajDfFromLog(directory, filename):
+    cols = [14,15,16,17,18]
+    colnames = ['x','y','heading','travelling','speed']
+    ftTrajDf = pd.read_csv(directory+"/"+filename,usecols=cols,names=colnames)
+    return ftTrajDf
 
 def timeseriesDfFromLog(dat):
     from scipy.signal import medfilt
