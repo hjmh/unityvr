@@ -48,6 +48,8 @@ class unityVRexperiment:
 
 
     def saveData(self, saveDir, saveName, imaging=True):
+        # Choose imaging = False if you are processing behaviour data without
+        # imaging data and would like to drop the "uvr" subfolder.
         if imaging:
             savepath = sep.join([saveDir,saveName,'uvr'])
         else:
@@ -67,8 +69,9 @@ class unityVRexperiment:
         self.nidDf.to_csv(sep.join([savepath,'nidDf.csv']))
 
         return savepath
-    
+
     def saveShapeDf(self, saveDir, saveName, imaging=True):
+        #TODO: Potentially move to trajproc.py or analysis file
         if imaging:
             savepath = sep.join([saveDir,saveName,'uvr'])
         else:
