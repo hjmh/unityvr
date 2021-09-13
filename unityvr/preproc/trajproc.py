@@ -5,7 +5,6 @@ import scipy as sp
 import scipy.signal
 
 import matplotlib.pyplot as plt
-import seaborn as sns
 
 from unityvr.preproc import logproc
 from unityvr.viz import viz
