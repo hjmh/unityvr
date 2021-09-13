@@ -46,12 +46,9 @@ class unityVRexperiment:
         frameftDf.reset_index(level=0, inplace=True)
         return frameftDf
 
-
-    def saveData(self, saveDir, saveName, imaging=True):
-        if imaging:
-            savepath = sep.join([saveDir,saveName,'uvr'])
-        else:
-            savepath = sep.join([saveDir,saveName])
+    def saveData(self, saveDir, saveName):
+        savepath = sep.join([saveDir,saveName,'uvr'])
+    
         # make directory
         if not exists(savepath):
             makedirs(savepath)
@@ -67,21 +64,6 @@ class unityVRexperiment:
         self.nidDf.to_csv(sep.join([savepath,'nidDf.csv']))
 
         return savepath
-    
-    def saveShapeDf(self, saveDir, saveName, imaging=True):
-        if imaging:
-            savepath = sep.join([saveDir,saveName,'uvr'])
-        else:
-            savepath = sep.join([saveDir,saveName])
-        # make directory
-        if not exists(savepath):
-            makedirs(savepath)
-
-        # save dataframe
-        self.shapeDf.to_csv(sep.join([savepath,'shapeDf.csv']))
-
-        return savepath
-
 
 # constructor for unityVRexperiment
 def constructUnityVRexperiment(dirName,fileName,imaging=False,test=False):
