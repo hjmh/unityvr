@@ -17,7 +17,10 @@ from unityvr.analysis.utilityFunctions import getTrajFigName
 def shape(posDf, step = None, interp='linear', stitch=False, plot = False, plotsave=False, saveDir=None, uvrDat=None):
 
     #if the posDf has been segmented and clipped to remove regions of flight
-    if 'clipped' in posDf: posDf = carryAttrs(posDf.loc[posDf['clipped']==0], posDf)
+    if 'clipped' in posDf: 
+        posDf = carryAttrs(posDf.loc[posDf['clipped']==0], posDf)
+        pDf = posDf.copy(); pDf.loc[:,'x'] -= float(pDf['x'].iloc[0]); pDf.loc[:,'y'] -= float(pDf['y'].iloc[0])
+        posDf = carryAttrs(pDf,posDf)
     if 'flight' in posDf:
         if not stitch:
             posDf = carryAttrs(posDf.loc[posDf['flight']==0], posDf)
