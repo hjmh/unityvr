@@ -46,7 +46,6 @@ def plotFlyPath(uvrTest, convfac, figsize):
 
     return fig, axs
 
-
 def plotVRpathWithObjects(uvrExperiment,limx,limy, myfigsize):
 
     fig, ax = plt.subplots(1,1, figsize=myfigsize)
@@ -81,3 +80,38 @@ def plotObjectEllipse(ax, rad, pos):
     ax.add_patch(ellipse)
 
     return ax
+
+def plotTrajwithParameterandCondition(df, figsize, parameter='angle',
+                                      condition=None,
+                                      color = 'grey',
+                                      cmap = 'twilight_shifted',
+                                      transform = lambda x: x
+                                     ):
+    
+    if condition is None: condition = np.ones(np.shape(df['x']),dtype='bool')
+    
+    fig, axs = plt.subplots(1,2,figsize=figsize, gridspec_kw={'width_ratios':[20,1]})
+    
+    axs[0].plot(df['x']*df.dc2cm,df['y']*df.dc2cm,color=color, linewidth=0.5)
+    
+    cb = axs[0].scatter(df['x'].loc[condition]*df.dc2cm,df['y'].loc[condition]*df.dc2cm,
+                                s=5,c=df[parameter].loc[condition].transform(transform), cmap=cmap)
+    
+    axs[0].plot(df['x'][0]*df.dc2cm,df['y'][0]*df.dc2cm,'ok')
+    axs[0].text(df['x'][0]*df.dc2cm+0.2,df['y'][0]*df.dc2cm+0.2,'start')
+    axs[0].plot(df['x'].values[-1]*df.dc2cm,df['y'].values[-2]*df.dc2cm,'sk')
+    
+    axs[0].plot(df.loc[condition].x.iloc[0]*df.dc2cm,df.loc[condition].y.iloc[0]*df.dc2cm,'ok')
+    axs[0].text(df.loc[condition].x.iloc[0]*df.dc2cm+0.2,df.loc[condition].y.iloc[0]*df.dc2cm+0.2,'start')
+    axs[0].plot(df.loc[condition].x.iloc[-1]*df.dc2cm,df.loc[condition].y.iloc[-1]*df.dc2cm,'sk')
+    
+    axs[0].set_aspect('equal')
+    axs[0].set_xlabel('x [cm]')
+    axs[0].set_ylabel('y [cm]')
+    
+    myAxisTheme(axs[0])
+    plt.colorbar(cb,cax=axs[1], label=parameter)
+    
+    return fig, axs
+
+
