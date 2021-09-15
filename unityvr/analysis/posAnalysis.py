@@ -2,6 +2,7 @@ import numpy as np
 import pandas
 import scipy as sp
 import scipy.signal
+import matplotlib.pyplot as plt
 
 from unityvr.viz import viz
 from unityvr.analysis.utilityFunctions import carryAttrs
@@ -72,7 +73,7 @@ def flightSeg(posDf, thresh, freq=120, plot = False, plotsave=False, saveDir=Non
         fig0, ax0 = plt.subplots()
         ax0.plot(t,F[1,:],'k');
         ax0.plot(df['time'],df['flight']*F[1,:].max(),'r',alpha=0.2);
-        ax0.set_xlabel("time"); ax0.set_legend(["power in HF band","thresholded"])
+        ax0.set_xlabel("time"); plt.legend(["power in HF band","thresholded"])
         
         fig1, ax1 = viz.plotTrajwithParameterandCondition(df, figsize=(10,5), parameter='angle', 
                                                         condition = (df['flight']==0))
