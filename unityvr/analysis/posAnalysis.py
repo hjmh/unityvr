@@ -12,7 +12,7 @@ from os.path import sep, exists, join
 ##functions to process posDf dataframe
 
 #obtain the position dataframe with derived quantities
-def position(uvrDat, derive = True, rotate_by = None, filter_date = '2021-09-08', plot = False, plotsave=False, saveDir=None):
+def position(uvrDat, derive = True, rotate_by = None, filter_date = '2021-09-08', plot = False, plotsave=False, saveDir=None, correct_convention=False):
     
     ## input arguments
     
@@ -22,13 +22,17 @@ def position(uvrDat, derive = True, rotate_by = None, filter_date = '2021-09-08'
     
     # filter_date: date of experiment after which right handed angle convention will not be forced when loading posDf; this is because converting from Unity's left handed angle convention to right handed convention was implemented after a certain date in the preproc.py file
     
+    #correct_convention: set to True if you want to correct the angle convention for preprocessed data
+    
     posDf = uvrDat.posDf
 
     #angle correction
-    if (np.datetime64(uvrDat.metadata['date'])<=np.datetime64(filter_date)) & ('angle_convention' not in uvrDat.metadata):
-        print('correcting for Unity angle convention.')
-        posDf['angle'] = (-posDf['angle'])%360
-        uvrDat.metadata['angle_convention'] = "right-handed"
+    #this is required only for data that was preprocessed before the filter_date
+    if correct_convention:
+        if (np.datetime64(uvrDat.metadata['date'])<=np.datetime64(filter_date)) & ('angle_convention' not in uvrDat.metadata):
+            print('correcting for Unity angle convention.')
+            posDf['angle'] = (-posDf['angle'])%360
+            uvrDat.metadata['angle_convention'] = "right-handed"
 
     #rotate
     if rotate_by is not None:
