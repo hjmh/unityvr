@@ -129,6 +129,7 @@ def makeMetaDict(dat, fileName):
         'ballRad': ballRad,
         'setFrameRate': setFrameRate,
         'notes': metadat[5]
+        'angle_convention':"right-handed"
     }
 
     return metadata
