@@ -81,33 +81,42 @@ def plotObjectEllipse(ax, rad, pos):
 
     return ax
 
+
+def plotTraj(ax,xpos,ypos,param,size=5,unit="cm", cmap='twilight_shifted',limvals=(0,360)):
+
+    cb = ax.scatter(xpos,ypos,s=size,c=param,cmap='twilight_shifted', vmin=limvals[0], vmax=limvals[1])
+    ax.plot(xpos[0],ypos[0],'ok')
+    ax.text(xpos[0]+0.2,ypos[0]+0.2,'start')
+    ax.plot(xpos[-1],ypos[-1],'sk')
+
+    ax.set_aspect('equal')
+    ax.set_xlabel('x [cm]')
+    ax.set_ylabel('y [cm]')
+    myAxisTheme(ax)
+
+    return ax, cb
+
+
 def plotTrajwithParameterandCondition(df, figsize, parameter='angle',
                                       condition=None,
                                       color = 'grey',
-                                      cmap = 'twilight_shifted',
-                                      transform = lambda x: x
+                                      mycmap = 'twilight_shifted',
+                                      transform = lambda x: x,
+                                      plotOriginal=True
                                      ):
-    
+
     if condition is None: condition = np.ones(np.shape(df['x']),dtype='bool')
-    
+
     fig, axs = plt.subplots(1,2,figsize=figsize, gridspec_kw={'width_ratios':[20,1]})
-    
-    axs[0].plot(df['x']*df.dc2cm,df['y']*df.dc2cm,color=color, linewidth=0.5)
-    
-    cb = axs[0].scatter(df['x'].loc[condition]*df.dc2cm,df['y'].loc[condition]*df.dc2cm,
-                                s=5,c=df[parameter].loc[condition].transform(transform), cmap=cmap)
-    
-    axs[0].plot(df.loc[condition].x.iloc[0]*df.dc2cm,df.loc[condition].y.iloc[0]*df.dc2cm,'ok')
-    axs[0].text(df.loc[condition].x.iloc[0]*df.dc2cm+0.2,df.loc[condition].y.iloc[0]*df.dc2cm+0.2,'start')
-    axs[0].plot(df.loc[condition].x.iloc[-1]*df.dc2cm,df.loc[condition].y.iloc[-1]*df.dc2cm,'sk')
-    
-    axs[0].set_aspect('equal')
-    axs[0].set_xlabel('x [cm]')
-    axs[0].set_ylabel('y [cm]')
-    
-    myAxisTheme(axs[0])
-    plt.colorbar(cb,cax=axs[1], label=parameter)
-    
+
+    if plotOriginal:
+        axs[0].plot(df['x']*df.dc2cm,df['y']*df.dc2cm,color=color, linewidth=0.5)
+
+    axs[0],cb = plotTraj(axs[0],df.loc[condition].x.iloc[0]*df.dc2cm,
+                         df.loc[condition].y.iloc[0]*df.dc2cm,
+                         df[parameter].loc[condition].transform(transform),
+                         5,"cm", mycmap)
+
+    plt.colorbar(cb,cax=axs[1],label=parameter)
+
     return fig, axs
-
-
