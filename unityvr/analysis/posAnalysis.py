@@ -2,6 +2,7 @@ import numpy as np
 import pandas
 import scipy as sp
 import scipy.signal
+import matplotlib.pyplot as plt
 
 from unityvr.viz import viz
 from unityvr.analysis.utilityFunctions import carryAttrs
@@ -21,9 +22,12 @@ def position(uvrDat, derive = True, rotate_by = None, filter_date = '2021-09-08'
     
     # filter_date: date of experiment after which right handed angle convention will not be forced when loading posDf; this is because converting from Unity's left handed angle convention to right handed convention was implemented after a certain date in the preproc.py file
     
+    #correct_convention: set to True if you want to correct the angle convention for preprocessed data
+    
     posDf = uvrDat.posDf
 
     #angle correction
+    #this is required only for data that was preprocessed before the filter_date
     if (np.datetime64(uvrDat.metadata['date'])<=np.datetime64(filter_date)) & ('angle_convention' not in uvrDat.metadata):
         print('correcting for Unity angle convention.')
         posDf['angle'] = (-posDf['angle'])%360
@@ -72,7 +76,7 @@ def flightSeg(posDf, thresh, freq=120, plot = False, plotsave=False, saveDir=Non
         fig0, ax0 = plt.subplots()
         ax0.plot(t,F[1,:],'k');
         ax0.plot(df['time'],df['flight']*F[1,:].max(),'r',alpha=0.2);
-        ax0.set_xlabel("time"); ax0.set_legend(["power in HF band","thresholded"])
+        ax0.set_xlabel("time"); plt.legend(["power in HF band","thresholded"])
         
         fig1, ax1 = viz.plotTrajwithParameterandCondition(df, figsize=(10,5), parameter='angle', 
                                                         condition = (df['flight']==0))
