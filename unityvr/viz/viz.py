@@ -97,10 +97,6 @@ def plotTrajwithParameterandCondition(df, figsize, parameter='angle',
     cb = axs[0].scatter(df['x'].loc[condition]*df.dc2cm,df['y'].loc[condition]*df.dc2cm,
                                 s=5,c=df[parameter].loc[condition].transform(transform), cmap=cmap)
     
-    axs[0].plot(df['x'][0]*df.dc2cm,df['y'][0]*df.dc2cm,'ok')
-    axs[0].text(df['x'][0]*df.dc2cm+0.2,df['y'][0]*df.dc2cm+0.2,'start')
-    axs[0].plot(df['x'].values[-1]*df.dc2cm,df['y'].values[-2]*df.dc2cm,'sk')
-    
     axs[0].plot(df.loc[condition].x.iloc[0]*df.dc2cm,df.loc[condition].y.iloc[0]*df.dc2cm,'ok')
     axs[0].text(df.loc[condition].x.iloc[0]*df.dc2cm+0.2,df.loc[condition].y.iloc[0]*df.dc2cm+0.2,'start')
     axs[0].plot(df.loc[condition].x.iloc[-1]*df.dc2cm,df.loc[condition].y.iloc[-1]*df.dc2cm,'sk')
