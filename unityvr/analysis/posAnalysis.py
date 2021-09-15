@@ -12,7 +12,7 @@ from os.path import sep, exists, join
 ##functions to process posDf dataframe
 
 #obtain the position dataframe with derived quantities
-def position(uvrDat, derive = True, rotate_by = None, filter_date = '2021-09-08', plot = False, plotsave=False, saveDir=None, correct_convention=False):
+def position(uvrDat, derive = True, rotate_by = None, filter_date = '2021-09-08', plot = False, plotsave=False, saveDir=None):
     
     ## input arguments
     
@@ -28,11 +28,10 @@ def position(uvrDat, derive = True, rotate_by = None, filter_date = '2021-09-08'
 
     #angle correction
     #this is required only for data that was preprocessed before the filter_date
-    if correct_convention:
-        if (np.datetime64(uvrDat.metadata['date'])<=np.datetime64(filter_date)) & ('angle_convention' not in uvrDat.metadata):
-            print('correcting for Unity angle convention.')
-            posDf['angle'] = (-posDf['angle'])%360
-            uvrDat.metadata['angle_convention'] = "right-handed"
+    if (np.datetime64(uvrDat.metadata['date'])<=np.datetime64(filter_date)) & ('angle_convention' not in uvrDat.metadata):
+        print('correcting for Unity angle convention.')
+        posDf['angle'] = (-posDf['angle'])%360
+        uvrDat.metadata['angle_convention'] = "right-handed"
 
     #rotate
     if rotate_by is not None:
