@@ -13,17 +13,17 @@ from os.path import sep, exists, join
 
 #obtain the position dataframe with derived quantities
 def position(uvrDat, derive = True, rotate_by = None, filter_date = '2021-09-08', plot = False, plotsave=False, saveDir=None):
-    
+
     ## input arguments
-    
-    # set derive = True if you want to compute derived quantities (ds, s, dTh (change in angle), radangle (angle in radians(-pi,pi))) 
-    
+
+    # set derive = True if you want to compute derived quantities (ds, s, dTh (change in angle), radangle (angle in radians(-pi,pi)))
+
     # rotate_by: angle (degrees) by which to rotate the trajectory to ensure the bright part of the panorama is at 180 degree heading.
-    
+
     # filter_date: date of experiment after which right handed angle convention will not be forced when loading posDf; this is because converting from Unity's left handed angle convention to right handed convention was implemented after a certain date in the preproc.py file
-    
+
     #correct_convention: set to True if you want to correct the angle convention for preprocessed data
-    
+
     posDf = uvrDat.posDf
 
     #angle correction
@@ -49,7 +49,7 @@ def position(uvrDat, derive = True, rotate_by = None, filter_date = '2021-09-08'
         posDf['s'] = np.cumsum(posDf['ds'])
         posDf['dTh'] = (np.diff(posDf['angle'],prepend=posDf['angle'].iloc[0]) + 180)%360 - 180
         posDf['radangle'] = ((posDf['angle']+180)%360-180)*np.pi/180
-        
+
     if plot:
         fig, ax = viz.plotTrajwithParameterandCondition(posDf, figsize=(10,5), parameter='angle')
         if plotsave:
@@ -71,14 +71,14 @@ def flightSeg(posDf, thresh, freq=120, plot = False, plotsave=False, saveDir=Non
 
     #carry attributes
     df = carryAttrs(df,posDf)
-    
+
     if plot:
         fig0, ax0 = plt.subplots()
         ax0.plot(t,F[1,:],'k');
         ax0.plot(df['time'],df['flight']*F[1,:].max(),'r',alpha=0.2);
         ax0.set_xlabel("time"); plt.legend(["power in HF band","thresholded"])
-        
-        fig1, ax1 = viz.plotTrajwithParameterandCondition(df, figsize=(10,5), parameter='angle', 
+
+        fig1, ax1 = viz.plotTrajwithParameterandCondition(df, figsize=(10,5), parameter='angle',
                                                         condition = (df['flight']==0))
         if plotsave:
             fig0.savefig(getTrajFigName("FFT_flight_segmentation",saveDir,uvrDat.metadata))
@@ -96,9 +96,9 @@ def flightClip(posDf, minT = 0, maxT = 485, plot = False, plotsave=False, saveDi
 
     #carry attributes
     df = carryAttrs(df,posDf)
-    
+
     if plot:
-        fig, ax = viz.plotTrajwithParameterandCondition(df, figsize=(10,5), parameter='angle', 
+        fig, ax = viz.plotTrajwithParameterandCondition(df, figsize=(10,5), parameter='angle',
                                                         condition = (df['clipped']==0))
         if plotsave:
             fig.savefig(getTrajFigName("walking_trajectory_clipped",saveDir,uvrDat.metadata))
@@ -116,6 +116,22 @@ def rotation_deg(x,y,theta):
     r = np.matmul(np.array([x,y]).T,rotation_mat_rad(theta))
     return r[:,0], r[:,1]
 
+
+# Add derrived quantities: Velocities
+def computeVelocities(posDf, convf = 10, window=7, order=3):
+    #convf: conversion from dc (to cm if 10)
+    #window and order for filter
+    from scipy.signal import savgol_filter
+
+    # add derrived parameter to positional dataframe
+    posDf['vT'] = np.hypot(np.gradient(posDf.x.values*convf), np.gradient(posDf.y.values*convf))*(1/posDf.dt)
+    posDf['vR'] = np.gradient(np.unwrap(posDf.angle.values))
+
+    posDf['vT_filt'] = savgol_filter(posDf.vT, window, order)
+    posDf['vR_filt'] = savgol_filter(posDf.vR, window, order)
+    return posDf
+
+
 #add the derived quantities and clipping information to the saved dataframe
 def posDfUpdate(posDf, uvrDat, saveDir, saveName):
 
@@ -123,6 +139,3 @@ def posDfUpdate(posDf, uvrDat, saveDir, saveName):
     uvrDat.posDf = posDf
     savepath = uvrDat.saveData(saveDir, saveName)
     print("location:", saveDir)
-
-
-    
