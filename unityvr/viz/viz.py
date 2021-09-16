@@ -35,6 +35,16 @@ def pathPlotAxisTheme(myax, units):
     myax.set_xlabel('x [{}]'.format(units))
     myax.set_ylabel('y [{}]'.format(units))
 
+
+## Velocity distributions
+def plotVeloDistibution(ax,velo, nBins, binRange, xlim, xlabel,lineColor='dimgrey'):
+    hist_velo,mybins = np.histogram(velo,bins=nBins, range=binRange,density=True)
+    ax.plot(mybins[:-1]+0.5*np.diff(mybins), hist_velo,color=lineColor)
+    ax.set_xlim(xlim)
+    ax.set_xlabel(xlabel)
+    return ax
+
+## Fly paths
 def plotFlyPath(uvrTest, convfac, figsize):
     fig, axs = plt.subplots(1,2,figsize=figsize, gridspec_kw={'width_ratios':[20,1]})
     axs[0].plot(uvrTest.posDf.x*convfac,uvrTest.posDf.y*convfac,color='grey', linewidth=0.5)
