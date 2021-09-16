@@ -84,7 +84,7 @@ def plotObjectEllipse(ax, rad, pos):
 
 def plotTraj(ax,xpos,ypos,param,size=5,unit="cm", cmap='twilight_shifted',limvals=(0,360)):
 
-    cb = ax.scatter(xpos,ypos,s=size,c=param,cmap='twilight_shifted', vmin=limvals[0], vmax=limvals[1])
+    cb = ax.scatter(xpos,ypos,s=size,c=param,cmap=cmap, vmin=limvals[0], vmax=limvals[1])
     ax.plot(xpos[0],ypos[0],'ok')
     ax.text(xpos[0]+0.2,ypos[0]+0.2,'start')
     ax.plot(xpos[-1],ypos[-1],'sk')
@@ -102,7 +102,8 @@ def plotTrajwithParameterandCondition(df, figsize, parameter='angle',
                                       color = 'grey',
                                       mycmap = 'twilight_shifted',
                                       transform = lambda x: x,
-                                      plotOriginal=True
+                                      plotOriginal=True,
+                                      mylimvals = (0,360)
                                      ):
 
     if condition is None: condition = np.ones(np.shape(df['x']),dtype='bool')
@@ -112,10 +113,10 @@ def plotTrajwithParameterandCondition(df, figsize, parameter='angle',
     if plotOriginal:
         axs[0].plot(df['x']*df.dc2cm,df['y']*df.dc2cm,color=color, linewidth=0.5)
 
-    axs[0],cb = plotTraj(axs[0],df.loc[condition].x.iloc[0]*df.dc2cm,
-                         df.loc[condition].y.iloc[0]*df.dc2cm,
+    axs[0],cb = plotTraj(axs[0],df.loc[condition].x.values*df.dc2cm,
+                         df.loc[condition].y.values*df.dc2cm,
                          df[parameter].loc[condition].transform(transform),
-                         5,"cm", mycmap)
+                         5,"cm", mycmap, mylimvals)
 
     plt.colorbar(cb,cax=axs[1],label=parameter)
 
