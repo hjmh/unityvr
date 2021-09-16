@@ -40,22 +40,27 @@ def fit_vonmises(degAngles, binwidth = 20, plot = False, plotsave=False, saveDir
     #fit p as a function of theta
     params, _ = curve_fit(vonmises_pdf, theta, p, bounds=([0,0],[2*np.pi,np.inf]))
     
-    V = vonmises_pdf(np.linspace(0,2*np.pi,num=50), params[0], params[1])
-
-    plt.plot(np.linspace(0,360,num=50), V, 'k-')
-    plt.xlabel(r"$\theta$")
-    if plotsave:
-        plt.savefig(getTrajFigName("fit_vonmises",saveDir,uvrDat.metadata))
-
-    fig, ax = plt.subplots(subplot_kw={'projection': 'polar'})
-    ax.plot(params[0], params[1], 'ro', alpha=0.5);
-    ax.set_yticks([0.5,1])
-    ax.set_theta_zero_location("E")
-    ax.set_xticks(np.pi/180 * np.arange(-180,  180,  45))
-    ax.set_thetalim(-np.pi, np.pi);
     
-    if plotsave:
-        fig.savefig(getTrajFigName("mu_kappa",saveDir,uvrDat.metadata))
+    if plot:
+        V = vonmises_pdf(np.linspace(0,2*np.pi,num=50), params[0], params[1])
+        
+        #plot 1
+        plt.plot(np.linspace(0,360,num=50), V, 'k-')
+        plt.xlabel(r"$\theta$")
+        
+        if plotsave:
+            plt.savefig(getTrajFigName("fit_vonmises",saveDir,uvrDat.metadata))
+        
+        #plot 2
+        fig, ax = plt.subplots(subplot_kw={'projection': 'polar'})
+        ax.plot(params[0], params[1], 'ro', alpha=0.5);
+        ax.set_yticks([0.5,1])
+        ax.set_theta_zero_location("E")
+        ax.set_xticks(np.pi/180 * np.arange(-180,  180,  45))
+        ax.set_thetalim(-np.pi, np.pi);
+
+        if plotsave:
+            fig.savefig(getTrajFigName("mu_kappa",saveDir,uvrDat.metadata))
 
         #returns mu in degree
     return params[0]*180/np.pi, params[1]

@@ -99,11 +99,11 @@ def tortuosityLoc(shapeDf, window=500, plot = False, plotsave=False, saveDir=Non
 
     df = carryAttrs(df,shapeDf)
     
-    fig, ax = viz.plotTrajwithParameterandCondition(df, figsize=(10,5), 
-                                    parameter='tortuosity', mycmap='viridis_r', mylimvals=[None, None], transform = lambda x: np.log(x))
-    
-    if plotsave:
-        fig.savefig(getTrajFigName("walking_trajectory_tortuosity",saveDir,uvrDat.metadata))
+    if plot:
+        fig, ax = viz.plotTrajwithParameterandCondition(df, figsize=(10,5), 
+                                        parameter='tortuosity', mycmap='viridis_r', mylimvals=[None, None], transform = lambda x: np.log(x))
+        if plotsave:
+            fig.savefig(getTrajFigName("walking_trajectory_tortuosity",saveDir,uvrDat.metadata))
 
     return df
 
