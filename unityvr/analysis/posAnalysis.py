@@ -5,7 +5,7 @@ import scipy.signal
 import matplotlib.pyplot as plt
 
 from unityvr.viz import viz
-from unityvr.analysis.utilityFunctions import carryAttrs
+from unityvr.analysis.utilityFunctions import carryAttrs, getTrajFigName
 
 from os.path import sep, exists, join
 
