@@ -3,6 +3,8 @@ from numpy_ext import rolling_apply
 import pandas as pd
 import scipy as sp
 
+from skimage.filters import threshold_otsu
+
 from os.path import sep, exists, join
 
 import matplotlib.pyplot as plt
@@ -105,6 +107,22 @@ def tortuosityLoc(shapeDf, window=500, plot = False, plotsave=False, saveDir=Non
         if plotsave:
             fig.savefig(getTrajFigName("walking_trajectory_tortuosity",saveDir,uvrDat.metadata))
 
+    return df
+
+def segment(shapeDf, plot=False):
+    
+    df = shapeDf.copy()
+    
+    thresh = threshold_otsu(df['tortuosity'].transform(lambda x: np.log(x)).dropna())
+    df['curvy'] = np.log(df['tortuosity'])>thresh
+    
+    if plot:
+        with pd.option_context('mode.use_inf_as_na', True):
+            df['tortuosity'].transform(lambda x: np.log(x)).dropna().plot.kde()
+        plt.axvline(thresh,color='k')
+        
+    df = carryAttrs(df,shapeDf)
+        
     return df
 
 def shapeDfUpdate(shapeDf, uvrDat, saveDir, saveName):
