@@ -26,7 +26,7 @@ def getRoiNum(df, roiname = 'slice'):
     return len(roinames)
 
 
-def computePVA (locs, weights):
+def computePVA(locs, weights):
     """ Compute population vector average
     """
     nsteps = weights.shape[0]
