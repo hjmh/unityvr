@@ -49,6 +49,8 @@ def debugAlignmentPlots(uvrDat,imgMetadat, imgInd, volFramePos):
 # generate combined DataFrame
 def combineImagingAndPosDf(imgDat, posDf, volFramePos):
     expDf = imgDat.copy()
+    lendiff = len(expDf) - len(posDf.x.values[volFramePos])
+    expDf = expDf[:-lendiff]
     expDf['posTime'] = posDf.time.values[volFramePos]
     expDf['x'] = posDf.x.values[volFramePos]
     expDf['y'] = posDf.y.values[volFramePos]
