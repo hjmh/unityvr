@@ -18,6 +18,6 @@ def getTrajFigName(figurename,saveDir,metadata):
     name = saveDir+sep+'_'.join([figurename, metadata['genotype'],
                                       metadata['sex'],
                                       metadata['flyid'],
-                                      metadata['expid'][-5:],
+                                      metadata['expid'].split('_')[-1],
                                       metadata['trial']+'.pdf'])
     return name
