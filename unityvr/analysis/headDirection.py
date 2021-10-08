@@ -48,7 +48,7 @@ def getEBBumpPVA(df, roiname = 'slice'):
 
     pva = computePVA(roiArcPos,roidat)
 
-    pvaRad = np.mod(np.arctan2(pva[1,:],pva[0,:]) + np.pi, 2*np.pi)
+    pvaRad = np.mod(np.arctan2(pva[1,:],pva[0,:]), 2*np.pi)
     pvaLen = np.hypot(pva[0,:],pva[1,:])
 
     # flip to account for conversion to right-handed reference frame
@@ -91,7 +91,7 @@ def plotDFFheatmap(ax, df, roiname='slice', addColorbar=True,lefthanded=False):
 
     cax = ax.pcolor(df.posTime,order,df[roinames].values.T,cmap='Blues', edgecolors='face',shading='auto')
     ax.set_xlabel('Time [s]')
-    ax.set_ylabel('\nROIs (n = {0})'.format(df[roinames].values.shape[0]))
+    ax.set_ylabel('\nROIs (n = {0})'.format(df[roinames].values.shape[1]))
 
     ax.set_ylim(-0.5,nroi-0.5)
 
