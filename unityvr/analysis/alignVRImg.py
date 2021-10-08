@@ -50,7 +50,9 @@ def debugAlignmentPlots(uvrDat,imgMetadat, imgInd, volFramePos):
 def combineImagingAndPosDf(imgDat, posDf, volFramePos):
     expDf = imgDat.copy()
     lendiff = len(expDf) - len(posDf.x.values[volFramePos])
-    expDf = expDf[:-lendiff]
+    if lendiff != 0:
+        print('Truncated fictrac recording.')
+        expDf = expDf[:-lendiff]
     expDf['posTime'] = posDf.time.values[volFramePos]
     expDf['x'] = posDf.x.values[volFramePos]
     expDf['y'] = posDf.y.values[volFramePos]
