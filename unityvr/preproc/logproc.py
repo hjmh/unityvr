@@ -264,6 +264,8 @@ def texDfFromLog(dat):
 
     texDf = pd.concat(entries,ignore_index = True)
 
+    texDf.time = texDf.time-texDf.time[0]
+
     return texDf
 
 def ftTrajDfFromLog(directory, filename):
@@ -287,7 +289,6 @@ def timeseriesDfFromLog(dat):
         pdDf = pdDfFromLog(dat)
     except:
         print("No analog input data was recorded.")
-
 
     posDf.time = posDf.time-posDf.time[0]
     dtDf.time = dtDf.time-dtDf.time[0]
