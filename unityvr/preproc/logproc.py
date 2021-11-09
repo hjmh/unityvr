@@ -90,8 +90,12 @@ def loadUVRData(savepath):
     posDf = pd.read_csv(sep.join([savepath,'posDf.csv'])).drop(columns=['Unnamed: 0'])
     ftDf = pd.read_csv(sep.join([savepath,'ftDf.csv'])).drop(columns=['Unnamed: 0'])
     nidDf = pd.read_csv(sep.join([savepath,'nidDf.csv'])).drop(columns=['Unnamed: 0'])
-    texDf = pd.read_csv(sep.join([savepath,'texDf.csv'])).drop(columns=['Unnamed: 0'])
 
+    try:
+        texDf = pd.read_csv(sep.join([savepath,'texDf.csv'])).drop(columns=['Unnamed: 0'])
+    except FileNotFoundError:
+        texDf = pd.DataFrame()
+        #No texture mapping time series was recorded with this experiment, fill with empty DataFrame
     uvrexperiment = unityVRexperiment(metadata=metadat,posDf=posDf,ftDf=ftDf,nidDf=nidDf,objDf=objDf,texDf=texDf)
 
     return uvrexperiment
