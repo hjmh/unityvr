@@ -58,7 +58,7 @@ def position(uvrDat, derive = True, rotate_by = None, filter_date = '2021-09-08'
     return posDf
 
 #segment flight bouts
-def flightSeg(posDf, thresh, freq=120, plot = False, plotsave=False, saveDir=None, uvrDat=None):
+def flightSeg(posDf, thresh, freq=120, plot = False, spec_row = 1, plotsave=False, saveDir=None, uvrDat=None):
 
     df = posDf.copy()
 
@@ -66,7 +66,7 @@ def flightSeg(posDf, thresh, freq=120, plot = False, plotsave=False, saveDir=Non
     _, t, F = sp.signal.spectrogram(df['ds'], freq)
 
     # 2nd row of the spectrogram seems to contain sufficient information to segment flight bouts
-    flight = sp.interpolate.interp1d(t,F[1,:]>thresh, kind='nearest', bounds_error=False)
+    flight = sp.interpolate.interp1d(t,F[spec_row,:]>thresh, kind='nearest', bounds_error=False)
     df['flight'] = flight(df['time'])
 
     #carry attributes
@@ -74,8 +74,8 @@ def flightSeg(posDf, thresh, freq=120, plot = False, plotsave=False, saveDir=Non
     
     if plot:
         fig0, ax0 = plt.subplots()
-        ax0.plot(t,F[1,:],'k');
-        ax0.plot(df['time'],df['flight']*F[1,:].max(),'r',alpha=0.2);
+        ax0.plot(t,F[spec_row,:],'k');
+        ax0.plot(df['time'],df['flight']*F[spec_row,:].max(),'r',alpha=0.2);
         ax0.set_xlabel("time"); plt.legend(["power in HF band","thresholded"])
         
         fig1, ax1 = viz.plotTrajwithParameterandCondition(df, figsize=(10,5), parameter='angle', 
