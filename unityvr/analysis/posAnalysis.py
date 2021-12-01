@@ -66,7 +66,7 @@ def flightSeg(posDf, thresh, freq=120, plot = False, spec_row = 1, plotsave=Fals
     _, t, F = sp.signal.spectrogram(df['ds'], freq)
 
     # 2nd row of the spectrogram seems to contain sufficient information to segment flight bouts
-    flight = sp.interpolate.interp1d(t,F[spec_row,:]>thresh, kind='nearest', bounds_error=False)
+    flight = sp.interpolate.interp1d(t,F[spec_row,:]>thresh, kind='nearest', bounds_error=False, fill_value=0)
     df['flight'] = flight(df['time'])
 
     #carry attributes

@@ -33,7 +33,7 @@ def shape(posDf, step = None, interp='linear', stitch=False, plot = False, plots
                 fstop = np.array(posDf['frame'].loc[posDf['flight'].diff()==-1])[i]
                 df.loc[df['frame']>=fstop,'x'] += float(posDf.loc[posDf['frame']==fstart-1]['x'])-float(posDf.loc[posDf['frame']==fstop]['x'])
                 df.loc[df['frame']>=fstop,'y'] += float(posDf.loc[posDf['frame']==fstart-1]['y'])-float(posDf.loc[posDf['frame']==fstop]['y'])
-            posDf = carryAttrs(df,posDf)
+            posDf = carryAttrs(df.dropna(),posDf)
 
     # if the step length is not specified, choose the median velocity as the step length
     if step is None:
@@ -43,19 +43,19 @@ def shape(posDf, step = None, interp='linear', stitch=False, plot = False, plots
     points = np.array([posDf['x'].values,posDf['y'].values]).T
     _,idx = np.unique(points,axis=0,return_index=True) #remove repeats
     clean = np.array([points[i] for i in sorted(idx)])
-    time = np.array([posDf.loc[i,'time'] for i in sorted(idx)])
-    angle = np.array([posDf.loc[i,'angle'] for i in sorted(idx)])
+    time = np.array([posDf['time'].iloc[i] for i in sorted(idx)])
+    angle = np.array([posDf['angle'].iloc[i] for i in sorted(idx)])
 
     # Linear length along the line:
     distance = np.cumsum( np.sqrt(np.sum( np.diff(clean, axis=0)**2, axis=1 )) )
     distance = np.insert(distance, 0, 0)/distance[-1]
-
+    
     # Interpolation for different methods:
-    alpha = np.linspace(0, 1, int(posDf['s'].iloc[-1]/step))
+    alpha = np.linspace(0, 1, int(np.nanmax(posDf['s'])/step))
 
-    path_interpolator =  sp.interpolate.interp1d(distance, clean, kind='nearest', axis=0)
-    time_interpolator = sp.interpolate.interp1d(distance, time, kind='nearest',axis=0)
-    angle_interpolator = sp.interpolate.interp1d(distance, angle, kind='nearest',axis=0)
+    path_interpolator =  sp.interpolate.interp1d(distance, clean, kind=interp, axis=0)
+    time_interpolator = sp.interpolate.interp1d(distance, time, kind=interp,axis=0)
+    angle_interpolator = sp.interpolate.interp1d(distance, angle, kind=interp,axis=0)
 
     shapeDf = pd.DataFrame(path_interpolator(alpha),columns = ['x','y'])
     shapeDf['time'] = time_interpolator(alpha)
