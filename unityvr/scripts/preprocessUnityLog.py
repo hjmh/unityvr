@@ -22,11 +22,11 @@ def preprocessUnityVRlogs(rootDir, dataDir):
     print(fileNames)
 
     for fileName in fileNames:
-    uvrTrial = lp.constructUnityVRexperiment(dirName,fileName)
-    uvrTrial.printMetadata()
+        uvrTrial = lp.constructUnityVRexperiment(dirName,fileName)
+        uvrTrial.printMetadata()
 
-    savepath = uvrTrial.saveData(preprocDir, (uvrTrial.metadata['expid']).split('_')[-1] + '/' + uvrTrial.metadata['trial'])
-    print(savepath)
+        savepath = uvrTrial.saveData(preprocDir, (uvrTrial.metadata['expid']).split('_')[-1] + '/' + uvrTrial.metadata['trial'])
+        print(savepath)
 
 
 if __name__ == "__main__":
