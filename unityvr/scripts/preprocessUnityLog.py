@@ -21,7 +21,7 @@ def preprocessUnityVRlogs(rootDir, dataDir):
         savepath = uvrTrial.saveData(preprocDir, (uvrTrial.metadata['expid']).split('_')[-1] + '/' + uvrTrial.metadata['trial'])
         print(savepath)
 
-    return 0
+    return: 0
 
 
 if __name__ == "__main__":
@@ -32,6 +32,6 @@ if __name__ == "__main__":
         #Example arguments
         #rootDir = '/Volumes/jayaramanlab/Hannah/Projects/FlyVR2P/Data/'
         #dataDir = 'disappearingSun/SS96_x_7f/EB/f04'
-        return 1
+        return: 1
 
     preprocessUnityVRlogs(sys.argv[1:])
