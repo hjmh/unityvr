@@ -8,21 +8,18 @@ import sys, getopt
 
 def preprocessUnityVRlogs(rootDir, dataDir):
     dirName = rootDir + 'raw/' + dataDir
-    condition = datPath.split('/')[3]
+    condition = dataDir.split('/')[3]
     preprocDir = rootDir + 'preproc/'+ dataDir
 
     fileNames = [f for f in listdir(dirName) if isfile(join(dirName, f)) and '.json' in f]
-    print(fileNames)
 
     for fileName in fileNames:
+        print(fileName  + '\n')
         uvrTrial = lp.constructUnityVRexperiment(dirName,fileName)
         uvrTrial.printMetadata()
 
         savepath = uvrTrial.saveData(preprocDir, (uvrTrial.metadata['expid']).split('_')[-1] + '/' + uvrTrial.metadata['trial'])
         print(savepath)
-
-    return: 0
-
 
 if __name__ == "__main__":
     # get command line argument
@@ -32,6 +29,9 @@ if __name__ == "__main__":
         #Example arguments
         #rootDir = '/Volumes/jayaramanlab/Hannah/Projects/FlyVR2P/Data/'
         #dataDir = 'disappearingSun/SS96_x_7f/EB/f04'
-        return: 1
+    else:
+        print(sys.argv[1] + '\n')
+        print(sys.argv[2]+ '\n')
+        preprocessUnityVRlogs(sys.argv[1],sys.argv[2])
 
-    preprocessUnityVRlogs(sys.argv[1:])
+    print("\n all done!")
