@@ -39,24 +39,31 @@ def shape(posDf, step = None, interp='linear', stitch=False, plot = False, plots
     if step is None:
         step = np.nanmedian(posDf['ds'])
     
-    #derive shapeDf columns
-    shapeDf = pd.DataFrame(columns = ['time','x','y','s','angle'])
-    t_trans = sp.interpolate.interp1d(posDf['s'], posDf['time'], kind = interp)
-    x_trans = sp.interpolate.interp1d(posDf['time'], posDf['x'], kind = interp)
-    y_trans = sp.interpolate.interp1d(posDf['time'], posDf['y'], kind = interp)
-    angle_trans = sp.interpolate.interp1d(posDf['time'], posDf['angle'], kind = interp)
+    # get trajectory
+    points = np.array([posDf['x'].values,posDf['y'].values]).T
+    _,idx = np.unique(points,axis=0,return_index=True) #remove repeats
+    clean = np.array([points[i] for i in sorted(idx)])
+    time = np.array([posDf.loc[i,'time'] for i in sorted(idx)])
+    angle = np.array([posDf.loc[i,'angle'] for i in sorted(idx)])
 
-    shapeDf['s'] = np.arange(np.nanmin(posDf['s']), np.nanmax(posDf['s']), step)
+    # Linear length along the line:
+    distance = np.cumsum( np.sqrt(np.sum( np.diff(clean, axis=0)**2, axis=1 )) )
+    distance = np.insert(distance, 0, 0)/distance[-1]
 
-    shapeDf['time'] = t_trans(shapeDf['s'])
-    shapeDf['x'] = x_trans(shapeDf['time'])
-    shapeDf['y'] = y_trans(shapeDf['time'])
-    shapeDf['angle'] = angle_trans(shapeDf['time'])
+    # Interpolation for different methods:
+    alpha = np.linspace(0, 1, int(posDf['s'].iloc[-1]/step))
 
-    shapeDf['dx'] = np.diff(shapeDf['x'], prepend = 0)
-    shapeDf['dy'] = np.diff(shapeDf['y'], prepend = 0)
+    path_interpolator =  sp.interpolate.interp1d(distance, clean, kind='nearest', axis=0)
+    time_interpolator = sp.interpolate.interp1d(distance, time, kind='nearest',axis=0)
+    angle_interpolator = sp.interpolate.interp1d(distance, angle, kind='nearest',axis=0)
 
-    shapeDf['ds'] = np.sqrt((shapeDf['dx']**2) + (shapeDf['dy']**2))
+    shapeDf = pd.DataFrame(path_interpolator(alpha),columns = ['x','y'])
+    shapeDf['time'] = time_interpolator(alpha)
+    shapeDf['angle'] = angle_interpolator(alpha)
+    shapeDf['dx'] = np.diff(shapeDf['x'],prepend=0)
+    shapeDf['dy'] = np.diff(shapeDf['y'],prepend=0)
+    shapeDf['ds'] = np.sqrt((shapeDf['dx']**2)+(shapeDf['dy']**2))
+    shapeDf['s'] = np.cumsum(shapeDf['ds'])
 
     shapeDf = carryAttrs(shapeDf,posDf)
     
