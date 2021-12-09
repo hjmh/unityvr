@@ -132,6 +132,66 @@ def segment(shapeDf, plot=False):
         
     return df
 
+def intersection(x1,x2,x3,x4,y1,y2,y3,y4):
+    #finds all the intersections points between 2 lines
+    
+    d = (x1-x2)*(y3-y4) - (y1-y2)*(x3-x4)
+    if d:
+        xs = ((x1*y2-y1*x2)*(x3-x4) - (x1-x2)*(x3*y4-y3*x4)) / d
+        ys = ((x1*y2-y1*x2)*(y3-y4) - (y1-y2)*(x3*y4-y3*x4)) / d
+        if (xs >= min(x1,x2) and xs <= max(x1,x2) and
+            xs >= min(x3,x4) and xs <= max(x3,x4)):
+            return xs, ys
+        
+def extractVoltes(shapeDf, res=0.1, L_thresh_min = 0.1, L_thresh_max = 1):
+    
+    #resolution of x only considers points spaced x distance apart on the trajectory to find intersections
+    
+    df = shapeDf.copy()
+    
+    #convert path-length resolution to step-resolution
+    step_res = np.where(df['s']>=res)[0][0]
+    
+    x = df['x'].iloc[::step_res].values
+    y = df['y'].iloc[::step_res].values
+    t = df['time'].iloc[::step_res].values
+
+    xs, ys = [], []
+    ts = []
+    for i in range(len(x)-1):
+        for j in range(i-1):
+            if xs_ys := intersection(x[i],x[i+1],x[j],x[j+1],y[i],y[i+1],y[j],y[j+1]):
+                xs.append(xs_ys[0])
+                ys.append(xs_ys[1])
+                ts.append([t[j],t[i]])
+
+    ts = np.array(ts)
+    
+    con_net = np.zeros(np.shape(shapeDf['time'])).astype('bool')
+    for i in range(len(ts)):
+        con = (df['time']>=ts[i,0]) & (df['time']<=ts[i,1])
+        L = np.sum(shapeDf['ds'][con])
+        if (L>=L_thresh_min) & (L<=L_thresh_max):
+            con_net = (con_net)|(con)
+    
+    df['voltes'] = con_net
+    
+    df = carryAttrs(df, shapeDf)
+    
+    return df
+
+def shapeToTimeBoolean(posDf,shapeDf,label):
+    
+    pDf = posDf.copy()
+    
+    transform = sp.interpolate.interp1d(shapeDf['time'],shapeDf[label].astype('int'),kind="nearest",bounds_error=False,fill_value=0)
+    
+    pDf[label] = transform(pDf['time']).astype('bool')
+    
+    pDf = carryAttrs(pDf, posDf)
+    
+    return pDf
+
 def shapeDfUpdate(shapeDf, uvrDat, saveDir, saveName):
     savepath = sep.join([saveDir,saveName,'uvr'])
 
