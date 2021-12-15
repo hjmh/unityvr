@@ -4,6 +4,7 @@ import pandas as pd
 import scipy as sp
 
 from skimage.filters import threshold_otsu
+from scipy.stats import skew, kurtosis
 
 from os.path import sep, exists, join
 
@@ -132,6 +133,36 @@ def segment(shapeDf, plot=False):
         
     return df
 
+def bimodality_coeff(shapeDf):
+    gam = skew(shapeDf['tortuosity'].transform(lambda x: np.log(x)).dropna())
+    
+    kap = kurtosis(shapeDf['tortuosity'].transform(lambda x: np.log(x)).dropna())
+    
+    n = len(shapeDf['tortuosity'].transform(lambda x: np.log(x)).dropna())
+    
+    b = ((gam**2) + 1)/(kap + 3*((n-1)**2)/((n-2)*(n-3)))
+    
+    return b
+
+def maximize_bim_coeff(shapeDf, lims = (10,1000), res = 0.5, plot = False):
+    
+    windows = np.round(np.exp(np.arange(np.log(lims[0]),np.log(lims[1]),res))).astype('int')
+    
+    beta = np.zeros(np.shape(windows))
+    
+    for i,window in enumerate(windows):
+        shapeDftemp = tortuosityLoc(shapeDf, window=window)
+        beta[i] = bimodality_coeff(shapeDftemp)
+        
+    win_max = windows[beta==np.nanmax(beta)][-1]
+    
+    if plot:
+        shapeDffin = tortuosityLoc(shapeDf, window=win_max)
+        with pd.option_context('mode.use_inf_as_na', True):
+            shapeDffin['tortuosity'].transform(lambda x: np.log(x)).dropna().plot.kde()
+            
+    return win_max
+
 def intersection(x1,x2,x3,x4,y1,y2,y3,y4):
     #finds all the intersections points between 2 lines
     
@@ -143,7 +174,7 @@ def intersection(x1,x2,x3,x4,y1,y2,y3,y4):
             xs >= min(x3,x4) and xs <= max(x3,x4)):
             return xs, ys
         
-def extractVoltes(shapeDf, res=0.1, L_thresh_min = 0.1, L_thresh_max = 1):
+def extractVoltes(shapeDf, res=0.05, L_thresh_min = 0.1, L_thresh_max = 1):
     
     #resolution of x only considers points spaced x distance apart on the trajectory to find intersections
     
@@ -191,6 +222,12 @@ def shapeToTimeBoolean(posDf,shapeDf,label):
     pDf = carryAttrs(pDf, posDf)
     
     return pDf
+
+def number_of_voltes(shapeDf):
+    return sp.ndimage.label(shapeDf['voltes'])[1]
+
+def volte_tortuosity_difference(shapeDf):
+    return np.nanmean(np.log(shapeDf.loc[shapeDf['voltes']]['tortuosity']))-np.nanmean(np.log(shapeDf.loc[~shapeDf['voltes']]['tortuosity']))
 
 def shapeDfUpdate(shapeDf, uvrDat, saveDir, saveName):
     savepath = sep.join([saveDir,saveName,'uvr'])
