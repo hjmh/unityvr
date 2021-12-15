@@ -58,12 +58,14 @@ def position(uvrDat, derive = True, rotate_by = None, filter_date = '2021-09-08'
     return posDf
 
 #segment flight bouts
-def flightSeg(posDf, thresh, freq=120, plot = False, spec_row = 1, plotsave=False, saveDir=None, uvrDat=None):
+def flightSeg(posDf, thresh, freq=120, plot = False, freq_content = 0.5, plotsave=False, saveDir=None, uvrDat=None):
 
     df = posDf.copy()
 
     #get spectrogram
-    _, t, F = sp.signal.spectrogram(df['ds'], freq)
+    f, t, F = sp.signal.spectrogram(df['ds'], freq)
+    
+    spec_row = round(freq_content*len(f)*2/freq) #freq_content is in Hertz
 
     # 2nd row of the spectrogram seems to contain sufficient information to segment flight bouts
     flight = sp.interpolate.interp1d(t,F[spec_row,:]>thresh, kind='nearest', bounds_error=False, fill_value=0)
