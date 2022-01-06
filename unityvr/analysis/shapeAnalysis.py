@@ -144,7 +144,7 @@ def bimodality_coeff(shapeDf):
     
     return b
 
-def maximize_bim_coeff(shapeDf, lims = (10,1000), res = 0.5, plot = False):
+def maximize_bim_coeff(shapeDf, lims = (10,1000), res = 1, plot = False):
     
     windows = np.round(np.exp(np.arange(np.log(lims[0]),np.log(lims[1]),res))).astype('int')
     
