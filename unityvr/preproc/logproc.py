@@ -14,7 +14,7 @@ posDfCols = ['frame','time','x','y','angle']
 ftDfCols = ['frame','ficTracTReadMs','ficTracTWriteMs','dx','dy','dz']
 dtDfCols = ['frame','time','dt']
 nidDfCols = ['frame','time','dt','pdsig','imgfsig']
-
+texDfCols = ['frame','time','xtex','ytex']
 # Data class definition
 
 @dataclass
@@ -30,6 +30,7 @@ class unityVRexperiment:
     posDf: pd.DataFrame = pd.DataFrame(columns=posDfCols)
     ftDf: pd.DataFrame = pd.DataFrame(columns=ftDfCols)
     nidDf: pd.DataFrame = pd.DataFrame(columns=nidDfCols)
+    texDf: pd.DataFrame = pd.DataFrame(columns=texDfCols)
 
     # object locations
     objDf: pd.DataFrame = pd.DataFrame(columns=objDfCols)
@@ -62,6 +63,7 @@ class unityVRexperiment:
         self.posDf.to_csv(sep.join([savepath,'posDf.csv']))
         self.ftDf.to_csv(sep.join([savepath,'ftDf.csv']))
         self.nidDf.to_csv(sep.join([savepath,'nidDf.csv']))
+        self.texDf.to_csv(sep.join([savepath,'texDf.csv']))
 
         return savepath
 
@@ -73,8 +75,9 @@ def constructUnityVRexperiment(dirName,fileName,imaging=False,test=False):
     metadat = makeMetaDict(dat, fileName)
     objDf = objDfFromLog(dat)
     posDf, ftDf, nidDf = timeseriesDfFromLog(dat)
+    texDf = texDfFromLog(dat)
 
-    uvrexperiment = unityVRexperiment(metadata=metadat,posDf=posDf,ftDf=ftDf,nidDf=nidDf,objDf=objDf)
+    uvrexperiment = unityVRexperiment(metadata=metadat,posDf=posDf,ftDf=ftDf,nidDf=nidDf,objDf=objDf,texDf=texDf)
 
     return uvrexperiment
 
@@ -88,7 +91,12 @@ def loadUVRData(savepath):
     ftDf = pd.read_csv(sep.join([savepath,'ftDf.csv'])).drop(columns=['Unnamed: 0'])
     nidDf = pd.read_csv(sep.join([savepath,'nidDf.csv'])).drop(columns=['Unnamed: 0'])
 
-    uvrexperiment = unityVRexperiment(metadata=metadat,posDf=posDf,ftDf=ftDf,nidDf=nidDf,objDf=objDf)
+    try:
+        texDf = pd.read_csv(sep.join([savepath,'texDf.csv'])).drop(columns=['Unnamed: 0'])
+    except FileNotFoundError:
+        texDf = pd.DataFrame()
+        #No texture mapping time series was recorded with this experiment, fill with empty DataFrame
+    uvrexperiment = unityVRexperiment(metadata=metadat,posDf=posDf,ftDf=ftDf,nidDf=nidDf,objDf=objDf,texDf=texDf)
 
     return uvrexperiment
 
@@ -248,6 +256,8 @@ def pdDfFromLog(dat):
 def texDfFromLog(dat):
     # get texture remapping log
     matching = [s for s in dat if "xpos" in s]
+    if len(matching) == 0: return pd.DataFrame()
+
     entries = [None]*len(matching)
     for entry, match in enumerate(matching):
         framedat = {'frame': match['frame'],
@@ -257,6 +267,8 @@ def texDfFromLog(dat):
         entries[entry] = pd.Series(framedat).to_frame().T
 
     texDf = pd.concat(entries,ignore_index = True)
+
+    texDf.time = texDf.time-texDf.time[0]
 
     return texDf
 
@@ -281,7 +293,6 @@ def timeseriesDfFromLog(dat):
         pdDf = pdDfFromLog(dat)
     except:
         print("No analog input data was recorded.")
-
 
     posDf.time = posDf.time-posDf.time[0]
     dtDf.time = dtDf.time-dtDf.time[0]

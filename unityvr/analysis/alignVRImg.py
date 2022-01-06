@@ -45,3 +45,28 @@ def debugAlignmentPlots(uvrDat,imgMetadat, imgInd, volFramePos):
     viz.myAxisTheme(axs[1])
 
     return fig
+
+# generate combined DataFrame
+def combineImagingAndPosDf(imgDat, posDf, volFramePos):
+    expDf = imgDat.copy()
+    lendiff = len(expDf) - len(posDf.x.values[volFramePos])
+    if lendiff != 0:
+        print('Truncated fictrac recording.')
+        expDf = expDf[:-lendiff]
+    expDf['posTime'] = posDf.time.values[volFramePos]
+    expDf['x'] = posDf.x.values[volFramePos]
+    expDf['y'] = posDf.y.values[volFramePos]
+    expDf['angle'] = posDf.angle.values[volFramePos]
+    try:
+        expDf['vT'] = posDf.vT.values[volFramePos]
+        expDf['vR'] = posDf.vR.values[volFramePos]
+        expDf['vTfilt'] = posDf.vT_filt.values[volFramePos]
+        expDf['vRfilt'] = posDf.vR_filt.values[volFramePos]
+    except AttributeError:
+        from unityvr.analysis import posAnalysis
+        posDf = posAnalysis.computeVelocities(posDf)
+        expDf['vT'] = posDf.vT.values[volFramePos]
+        expDf['vR'] = posDf.vR.values[volFramePos]
+        expDf['vTfilt'] = posDf.vT_filt.values[volFramePos]
+        expDf['vRfilt'] = posDf.vR_filt.values[volFramePos]
+    return expDf
