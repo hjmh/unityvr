@@ -86,6 +86,127 @@ def shiftPVA(pva,offset):
     return (np.unwrap(pva) + offset)%(np.pi*2)
 
 
+# Offset calculation
+def findDFFPeaks(dff,radpos,dffth,minwidth=2):
+    from scipy.signal import find_peaks
+
+    # find peaks
+    peaks, properties = find_peaks(dff, prominence=(None, 1),width=minwidth)
+
+    #filter peaks to make sure they are legit
+    peaks = peaks[dff[peaks]>dffth]
+    peaksfilt = peaks[radpos[peaks]>-np.pi]
+    peaksfilt = peaks[radpos[peaks]<=np.pi]
+    peaksrad = radpos[peaksfilt]
+
+    return peaks, peaksfilt
+
+def getOffsetCandidates(expDf,minwidth=2, useBrightAlignedAngle=True):
+    nroi = getRoiNum(expDf)
+    roidat = expDf[['slice{}'.format(i+1) for i in range(nroi)]]
+    tpts = len(roidat)
+    dffth = roidat.to_numpy().reshape(nroi*tpts,1).mean() #+ roidat.to_numpy().reshape(nroi*tpts,1).std()/2
+
+    rawoffset = [None] * tpts
+    rawoffsetLoc = [None] * tpts
+    rawoffsetDFF = [None] * tpts
+    npeaks = np.zeros(tpts)
+    for i in range(tpts):
+        dff = roidat.loc[i,:].values
+        roiArcPos = getArcRadPos(nroi)
+        # pad by repeating once on each side
+        dff = np.hstack([dff,dff,dff])
+        radpos = np.hstack([roiArcPos-2*np.pi,roiArcPos,roiArcPos+2*np.pi])
+
+        # flip to account for conversion to right-handed reference frame
+        radpos = np.pi*2 - radpos
+
+        # find DFF peaks
+        peaks, peaksfilt = findDFFPeaks(dff,radpos,dffth,minwidth)
+
+        #compute raw offsets and store them in a list of lists (list of frames, with list of raw offsets)
+        offsets = [None] * len(peaks)
+        for p in range(len(peaks)):
+            if useBrightAlignedAngle:
+                offsets[p] = circDist(radpos[peaks][p],expDf.angleBrightAligned.values[i]*np.pi/180)
+            else:
+                offsets[p] = circDist(radpos[peaks][p],expDf.angle.values[i]*np.pi/180)
+        rawoffset[i] = offsets
+        rawoffsetLoc[i] = radpos[peaks]
+        rawoffsetDFF[i] = dff[peaks]
+    return rawoffset, rawoffsetLoc, rawoffsetDFF
+
+
+def getArcRadPos(nroi, min=0, max=2*np.pi):
+    return np.linspace(0, 2*np.pi, nroi+1)[:-1] +(np.pi/nroi)
+
+
+def getOffsetGroups(rawoffset, maxOffsetN=3, kernelfactordenom=1.5, peakwidth=1, peakheight=.05):
+    from scipy import stats as sts
+    from scipy.signal import find_peaks
+    # Use offset candidate histogram to estimate distribution (KDE) and find peaks
+    flat_list = np.asarray([item for sublist in rawoffset for item in sublist])
+
+    #duplicate offset distribtion to avoid edge effects
+    offsets4kde = np.hstack([flat_list-np.pi*2, flat_list, flat_list+np.pi*2])
+
+    #estimate KDE on extended interval to avoid edge effects in peak detected
+    samplpts = np.linspace(-2*np.pi, 2*np.pi, 2**6)
+    kernel = sts.gaussian_kde(offsets4kde)
+    kernel.set_bandwidth(bw_method=kernel.factor / kernelfactordenom)
+    kdevals = kernel(samplpts)
+
+    #find peaks in KDE
+    kdepeaks, properties = find_peaks(kdevals,width=peakwidth,height=peakheight)
+
+    #filter peaks to be within -pi and pi
+    kdepeaks = kdepeaks[np.round(samplpts[kdepeaks],3)>-np.pi]
+    kdepeaks = kdepeaks[np.round(samplpts[kdepeaks],3)<=np.pi]
+    if (len(kdepeaks)>1) and (abs(circDist(np.round(samplpts[kdepeaks[0]],3),np.round(samplpts[kdepeaks[-1]],3))) < 0.1):
+        kdepeaks = kdepeaks[:-1]
+    kdeOffsets = np.nan*np.ones(maxOffsetN)
+    kdeOffsets[:min(maxOffsetN,len(kdepeaks))] = np.round(samplpts[kdepeaks],3)
+
+    return kdevals, samplpts, kdepeaks, kdeOffsets
+
+
+def groupOffsetCandidates(rawoffset,rawoffsetLoc,rawoffsetDFF, kdeOffsets, maxOffsetN=3):
+    # Classify each frame's offset computed earlier as belonging to one of the peaks in the KDE distribution
+    tpts = len(rawoffset)
+    # initialize raw offset array: frame x offset stats  x offset number
+    # offset stats: label, value, location, peak dff,
+    offsetArray = np.nan * np.ones((tpts,4, maxOffsetN))
+
+    # convert raw offset to array, considering only unique values per frame
+    for t in range(tpts):
+        rawOffsetFrame = np.nan*np.ones(maxOffsetN)
+        tmp = np.unique(np.round(rawoffset[t],3))
+        rawOffsetFrame[:len(tmp)] = tmp[:min(maxOffsetN,len(tmp))]
+        loc = rawoffsetLoc[t][np.logical_and(rawoffsetLoc[t]>=0,rawoffsetLoc[t]<2*np.pi)]
+        dff = rawoffsetDFF[t][np.logical_and(rawoffsetLoc[t]>=0,rawoffsetLoc[t]<2*np.pi)]
+
+        if len(loc)==0: continue
+
+        # find which peak in kde the offsets correspond to
+        tmp1 = np.reshape(np.tile(kdeOffsets,maxOffsetN),(maxOffsetN,maxOffsetN))
+        tmp2 = np.reshape(np.tile(rawOffsetFrame,maxOffsetN),(maxOffsetN,maxOffsetN)).T
+        offsetDist = abs(circDist(tmp1,tmp2))
+        offsetDist[np.isnan(offsetDist)] = np.inf
+        labs = offsetDist.argmin(axis=1)[:len(tmp)]
+
+        if not len(loc) == len(labs):
+            labs = labs[:len(loc)]
+
+        for i,l in enumerate(labs):
+            offsetArray[t,0,l] = l
+            offsetArray[t,1,l] = rawOffsetFrame[i]
+            offsetArray[t,2,l] = loc[i]
+            offsetArray[t,3,l] = dff[i]
+    npeaks = np.sum(np.isfinite(offsetArray[:,0,:]),axis=1)
+
+    return offsetArray, npeaks
+
+
 # Calcium traces vizualization .................................................
 # Some ROI visualizations .......................................
 
