@@ -22,7 +22,6 @@ def findImgFrameTimes(uvrDat,imgMetadat):
 
 
 def debugAlignmentPlots(uvrDat,imgMetadat, imgInd, volFramePos):
-
     # figure to make some sanity check plots
     fig, axs = plt.subplots(1,2, figsize=(12,4))
 
