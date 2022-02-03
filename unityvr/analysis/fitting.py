@@ -3,7 +3,7 @@ import pandas as pd
 
 import matplotlib.pyplot as plt
 
-from unityvr.analysis.utilityFunctions import getTrajFigName
+from unityvr.analysis.utils import getTrajFigName
 from unityvr.viz import viz
 
 from scipy.special import i0, iv
