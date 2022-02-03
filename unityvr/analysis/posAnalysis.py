@@ -5,7 +5,7 @@ import scipy.signal
 import matplotlib.pyplot as plt
 
 from unityvr.viz import viz
-from unityvr.analysis.utilityFunctions import carryAttrs, getTrajFigName
+from unityvr.analysis.utils import carryAttrs, getTrajFigName
 
 from os.path import sep, exists, join
 
@@ -13,15 +13,10 @@ from os.path import sep, exists, join
 
 #obtain the position dataframe with derived quantities
 def position(uvrDat, derive = True, rotate_by = None, filter_date = '2021-09-08', plot = False, plotsave=False, saveDir=None):
-
     ## input arguments
-
     # set derive = True if you want to compute derived quantities (ds, s, dTh (change in angle), radangle (angle in radians(-pi,pi)))
-
     # rotate_by: angle (degrees) by which to rotate the trajectory to ensure the bright part of the panorama is at 180 degree heading.
-
     # filter_date: date of experiment after which right handed angle convention will not be forced when loading posDf; this is because converting from Unity's left handed angle convention to right handed convention was implemented after a certain date in the preproc.py file
-
     #correct_convention: set to True if you want to correct the angle convention for preprocessed data
 
     posDf = uvrDat.posDf
@@ -64,7 +59,7 @@ def flightSeg(posDf, thresh, freq=120, plot = False, freq_content = 0.5, plotsav
 
     #get spectrogram
     f, t, F = sp.signal.spectrogram(df['ds'], freq)
-    
+
     spec_row = round(freq_content*len(f)*2/freq) #freq_content is in Hertz
 
     # 2nd row of the spectrogram seems to contain sufficient information to segment flight bouts
