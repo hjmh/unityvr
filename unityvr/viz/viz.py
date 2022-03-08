@@ -8,6 +8,50 @@ from os.path import sep, isfile, exists
 
 from unityvr.viz import utils
 
+# general purpose
+def stripplotWithLines(df, valvar, groupvar,huevar, axs, xlab, ylab, ylimvals,
+                       filtering=False, filterval=0, filtervar='None', normalize=False, normgroup='None', palette='tab20b_r'):
+    import matplotlib.colors as colors
+
+    samples = list(np.unique(df[huevar].values))
+    groups = list(np.unique(df[groupvar].values))
+
+    # generate color map
+    cNorm  = colors.Normalize(vmin=1, vmax=len(samples))
+    myCMap = plt.cm.ScalarMappable(norm=cNorm,cmap=palette)
+
+    for s, sample in enumerate(samples):
+        sampledf = df.query('{}=="{}"'.format(huevar,sample))
+
+        toplot = sampledf[valvar].values
+
+        #mask mean position where offset PVA length was low
+        if filtering:
+            filtervariable = sampledf[filtervar].values
+            toplot[filtervariable>filterval] = np.nan
+
+        #noramlize if desired
+        if normalize:
+            toplot = toplot - toplot[normgroup]
+            if ylimvals == (-np.pi, np.pi):
+                toplot[toplot>np.pi] = toplot[toplot>np.pi] - 2*np.pi
+                toplot[toplot<-np.pi] = toplot[toplot<-np.pi] + 2*np.pi
+
+        jitter = np.random.uniform(low=-0.1,high=0.1, size=len(groups))
+
+        axs.plot(np.arange(len(groups))+jitter, toplot,'o', color=myCMap.to_rgba(s+1), label=sample)
+        axs.plot(np.arange(len(groups))+jitter, toplot,'-', color=myCMap.to_rgba(s+1))
+
+
+    # beautification
+    axs.set_ylabel(ylab)
+    axs.set_ylim(ylimvals)
+    axs.set_xlabel(xlab)
+    axs.set_xticks(np.arange(len(groups)))
+    axs.set_xticklabels(groups)
+    return axs
+
+
 ## Velocity distributions
 def plotVeloDistibution(ax,velo, nBins, binRange, xlim, xlabel,lineColor='dimgrey'):
     hist_velo,mybins = np.histogram(velo,bins=nBins, range=binRange,density=True)
@@ -63,16 +107,21 @@ def plotVRpathWithObjects(uvrExperiment,limx,limy, myfigsize):
 
     return fig, ax
 
-def plotAllObjects(uvrExperiment, ax):
+def plotAllObjects(uvrExperiment, ax, labelobj=False, objsize=(-1,-1)):
 
     for obj in range(uvrExperiment.objDf.shape[0]):
         if("Plane" in uvrExperiment.objDf.name[obj]): continue
 
         if("FlyCamera" not in uvrExperiment.objDf.name[obj]):
-            ax = plotObjectEllipse(ax,
+            if objsize[0] < 0:
+                ax = plotObjectEllipse(ax,
                                    [uvrExperiment.objDf['sx'][obj], uvrExperiment.objDf['sy'][obj]],
                                    [uvrExperiment.objDf['px'][obj], uvrExperiment.objDf['py'][obj]])
-            ax.annotate(uvrExperiment.objDf['name'][obj], (uvrExperiment.objDf['px'][obj]+5, uvrExperiment.objDf['py'][obj]-10))
+            else:
+                ax = plotObjectEllipse(ax, objsize,
+                                      [uvrExperiment.objDf['px'][obj], uvrExperiment.objDf['py'][obj]])
+            if labelobj:
+                ax.annotate(uvrExperiment.objDf['name'][obj], (uvrExperiment.objDf['px'][obj]+5, uvrExperiment.objDf['py'][obj]-10))
     return ax
 
 
@@ -91,8 +140,8 @@ def plotTraj(ax,xpos,ypos,param,size=5,unit="cm", cmap='twilight_shifted',limval
     ax.plot(xpos[-1],ypos[-1],'sk')
 
     ax.set_aspect('equal')
-    ax.set_xlabel('x [cm]')
-    ax.set_ylabel('y [cm]')
+    ax.set_xlabel('x [{}]'.format(unit))
+    ax.set_ylabel('y [{}]'.format(unit))
     utils.myAxisTheme(ax)
 
     return ax, cb
