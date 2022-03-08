@@ -19,6 +19,16 @@ def circDist(angle1,angle2):
         dist[dist>np.pi] = dist[dist>np.pi] - 2*np.pi
     return dist
 
+def computeVectorPVA(angle, weights):
+    """ Compute population vector average of angles
+    """
+    pva_x = np.cos(angle)*weights
+    pva_y = np.sin(angle)*weights
+
+    pva = np.vstack((sum(pva_x)/len(pva_x), sum(pva_y)/len(pva_x)))
+
+    pvaLen = np.hypot(pva[0],pva[1])
+    return pva, pvaLen
 
 def computeVectorPVA(angle, weights):
     """ Compute population vector average of angles
