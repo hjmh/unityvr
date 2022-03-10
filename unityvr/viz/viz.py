@@ -24,6 +24,7 @@ def stripplotWithLines(df, valvar, groupvar,huevar, axs, xlab, ylab, ylimvals,
         sampledf = df.query('{}=="{}"'.format(huevar,sample))
 
         toplot = sampledf[valvar].values
+        groupnames = sampledf[groupvar].values
 
         #mask mean position where offset PVA length was low
         if filtering:
@@ -48,7 +49,7 @@ def stripplotWithLines(df, valvar, groupvar,huevar, axs, xlab, ylab, ylimvals,
     axs.set_ylim(ylimvals)
     axs.set_xlabel(xlab)
     axs.set_xticks(np.arange(len(groups)))
-    axs.set_xticklabels(groups)
+    axs.set_xticklabels(groupnames)
     return axs
 
 
