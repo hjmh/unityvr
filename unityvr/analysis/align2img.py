@@ -2,21 +2,20 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from unityvr.viz import utils
+import pandas as pd
+from os.path import sep
+import json
+from unityvr.preproc import logproc
 
 def findImgFrameTimes(uvrDat,imgMetadat):
 
     imgInd = np.where(np.diff(uvrDat.nidDf.imgfsig.values)>3)[0]
 
     imgFrame = uvrDat.nidDf.frame.values[imgInd].astype('int')
-    #print(imgFrame)
 
     #take only every x frame as start of volume
     volFrame = imgFrame[0::imgMetadat['fpv']]
-    #print(len(volFrame))
-    #print(len(imgDat.slice1))
-
     volFramePos = np.where(np.in1d(uvrDat.posDf.frame.values,volFrame, ))[0]
-    #print(len(volFramePos))
 
     return imgInd, volFramePos
 
@@ -43,7 +42,6 @@ def debugAlignmentPlots(uvrDat,imgMetadat, imgInd, volFramePos):
     axs[1].set_title('Sanity check 2:\nCheck that time values align well')
     utils.myAxisTheme(axs[1])
 
-    return fig
 
 # generate combined DataFrame
 def combineImagingAndPosDf(imgDat, posDf, volFramePos):
@@ -69,3 +67,44 @@ def combineImagingAndPosDf(imgDat, posDf, volFramePos):
         expDf['vTfilt'] = posDf.vT_filt.values[volFramePos]
         expDf['vRfilt'] = posDf.vR_filt.values[volFramePos]
     return expDf
+
+
+def loadAndAlignPreprocessedData(root, subdir, flies, conditions, trials, panDefs, img = 'img', vr = 'uvr'):
+    allExpDf = pd.DataFrame()
+    for f, fly in enumerate(flies):
+
+        print(fly)
+        flyStatsdf = pd.DataFrame(columns=['fly','condition','circmean','circvar','circvarPVA','circmeanCorr'])
+        flyStats = np.ones((4, len(conditions)))*np.nan
+        condlabel = []
+        for c, cond in enumerate(conditions):
+
+            for t, trial in enumerate(trials):
+                preprocDir = sep.join([root,'preproc',subdir, fly, cond, trial])
+                try:
+                    imgDat = pd.read_csv(sep.join([preprocDir, img,'roiDFF.csv'])).drop(columns=['Unnamed: 0'])
+                except FileNotFoundError:
+                    continue
+
+                with open(sep.join([preprocDir, img,'imgMetadata.json'])) as json_file:
+                    imgMetadat = json.load(json_file)
+
+                uvrDat = logproc.loadUVRData(sep.join([preprocDir, vr]))
+                posDf = uvrDat.posDf
+
+                imgInd, volFramePos = findImgFrameTimes(uvrDat,imgMetadat)
+                expDf = combineImagingAndPosDf(imgDat, posDf, volFramePos)
+
+                expDf = combineImagingAndPosDf(imgDat, posDf, volFramePos)
+
+                if 'B2s' in panDefs.getPanID(cond) and condtype == '2d':
+                    expDf['angleBrightAligned'] = np.mod(expDf['angle'].values-0*180/np.pi,360)
+                else:
+                    expDf['angleBrightAligned'] = np.mod(expDf['angle'].values-panDefs.panOrigin[panDefs.getPanID(cond)]*180/np.pi,360)
+                #expDf['flightmask'] = np.logical_and(expDf.vTfilt.values < maxVt, expDf.vTfilt.values > minVt)
+                expDf['fly'] = fly
+                expDf['condition'] = cond
+                expDf['trial'] = trial
+
+                allExpDf = pd.concat([allExpDf,expDf])
+    return allExpDf
