@@ -69,7 +69,7 @@ def combineImagingAndPosDf(imgDat, posDf, volFramePos):
     return expDf
 
 
-def loadAndAlignPreprocessedData(root, subdir, flies, conditions, trials, panDefs, img = 'img', vr = 'uvr'):
+def loadAndAlignPreprocessedData(root, subdir, flies, conditions, trials, panDefs, condtype, img = 'img', vr = 'uvr'):
     allExpDf = pd.DataFrame()
     for f, fly in enumerate(flies):
 
@@ -84,6 +84,7 @@ def loadAndAlignPreprocessedData(root, subdir, flies, conditions, trials, panDef
                 try:
                     imgDat = pd.read_csv(sep.join([preprocDir, img,'roiDFF.csv'])).drop(columns=['Unnamed: 0'])
                 except FileNotFoundError:
+                    print('missing file')
                     continue
 
                 with open(sep.join([preprocDir, img,'imgMetadata.json'])) as json_file:
