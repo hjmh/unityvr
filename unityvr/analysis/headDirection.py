@@ -99,12 +99,12 @@ def shiftPVA(pva,offset):
     return (np.unwrap(pva) + offset)%(np.pi*2)
 
 
-# Offset calculation
+# Offset calculation ...........................................................
 def findDFFPeaks(dff,radpos,dffth,minwidth=2):
     from scipy.signal import find_peaks
 
     # find peaks
-    peaks, properties = find_peaks(dff, prominence=(None, 1),width=minwidth)
+    peaks, properties = find_peaks(dff,prominence=(0.02, None),width=minwidth)
 
     #filter peaks to make sure they are legit
     peaks = peaks[dff[peaks]>dffth]
@@ -118,7 +118,7 @@ def getOffsetCandidates(expDf,minwidth=2, useBrightAlignedAngle=True):
     nroi = getRoiNum(expDf)
     roidat = expDf[['slice{}'.format(i+1) for i in range(nroi)]]
     tpts = len(roidat)
-    dffth = roidat.to_numpy().reshape(nroi*tpts,1).mean() #+ roidat.to_numpy().reshape(nroi*tpts,1).std()/2
+    dffth = roidat.to_numpy().reshape(nroi*tpts,1).mean() - roidat.to_numpy().reshape(nroi*tpts,1).std()/4
 
     rawoffset = [None] * tpts
     rawoffsetLoc = [None] * tpts
@@ -130,6 +130,12 @@ def getOffsetCandidates(expDf,minwidth=2, useBrightAlignedAngle=True):
         # pad by repeating once on each side
         dff = np.hstack([dff,dff,dff])
         radpos = np.hstack([roiArcPos-2*np.pi,roiArcPos,roiArcPos+2*np.pi])
+
+        # filter dff
+        from scipy.signal import savgol_filter
+        window = np.round(nroi/8)
+        if np.mod(window,2) == 0: window += 1
+        dff =  savgol_filter(dff, int(window), 3)
 
         # flip to account for conversion to right-handed reference frame
         radpos = np.pi*2 - radpos
@@ -178,7 +184,7 @@ def getOffsetGroups(rawoffset, maxOffsetN=3, kernelfactordenom=1.5, peakwidth=1,
     kdepeaks = kdepeaks[np.round(samplpts[kdepeaks],3)>-np.pi]
     kdepeaks = kdepeaks[np.round(samplpts[kdepeaks],3)<=np.pi]
     if (len(kdepeaks)>1) and (abs(circDist(np.round(samplpts[kdepeaks[0]],3),np.round(samplpts[kdepeaks[-1]],3))) < 0.1):
-        kdepeaks = kdepeaks[:-1]
+        kdepeaks = kdepeaks[:maxOffsetN]
     kdeOffsets = np.nan*np.ones(maxOffsetN)
     kdeOffsets[:min(maxOffsetN,len(kdepeaks))] = np.round(samplpts[kdepeaks],3)
 
@@ -268,7 +274,7 @@ def findMainOffset(offsetArray,maxOffsetN):
     return mainoffsetid, mainoffsetval, mainoffsetdff
 
 
-def makeOffsetDf(offsetArray,offsetreg,mainoffsetid, mainoffsetval, mainoffsetdff,fly,condition, condname, trial):
+def makeOffsetDf(time, xpos, ypos, offsetArray,offsetreg,mainoffsetid, mainoffsetval, mainoffsetdff,fly,condition, condname, trial):
     # check how much each offset was used and order accordingly
     percentT = np.sum((~np.isnan(offsetArray[:,0,:])).astype('int'), axis=0)/len(offsetArray[:,0,0])*100
     importanceOrder = percentT.argsort()[::-1]
@@ -280,6 +286,9 @@ def makeOffsetDf(offsetArray,offsetreg,mainoffsetid, mainoffsetval, mainoffsetdf
                              'offset1':offsetArray[:,1,importanceOrder[0]],
                              'offset2':offsetArray[:,1,importanceOrder[1]],
                              'offset3':offsetArray[:,1,importanceOrder[2]]})
+    offsettsdf['time'] = time
+    offsettsdf['xpos'] = xpos
+    offsettsdf['ypos'] = ypos
     offsettsdf['fly'] = fly
     offsettsdf['condition'] = condition
     offsettsdf['condname'] = condname
@@ -288,6 +297,8 @@ def makeOffsetDf(offsetArray,offsetreg,mainoffsetid, mainoffsetval, mainoffsetdf
 
 
 def makeOffsetStatsDf(offsetTimeSeries, maxOffsetN, flies, conditions, condnames, trials):
+    from astropy.stats import circvar
+
     offsetStatsFull = pd.DataFrame(columns=['fly','condition','condname','trial',
                                             'pvaoffset_circmean','pvaoffset_circvar',
                                             'mainoffset_circmean', 'mainoffset_circvar',
@@ -300,20 +311,27 @@ def makeOffsetStatsDf(offsetTimeSeries, maxOffsetN, flies, conditions, condnames
                 df= offsetTimeSeries.query('fly=="{}" & condition=="{}" & trial=="{}"'.format(fly,cond,trial))
                 if len(df) == 0:
                     continue
+
+                #fps = len(df.time.values)/df.time.values[-1]
+                #windowsize = int(1*fps)
+                #oldoffset = (df.oldoffset + np.pi).rolling(windowsize,center=True).apply(circmean) - np.pi
+                #mainoffset= (df.mainoffset + np.pi).rolling(windowsize,center=True).apply(circmean) - np.pi
+
                 oldoffset = np.asarray(list(df.oldoffset.values))
                 mainoffset = np.asarray(list(df.mainoffset.values))
-                offsetPvaold, offsetPvaLenold = computeVectorPVA(oldoffset+np.pi, np.ones(len(oldoffset)))
-                offsetPva, offsetPvaLen = computeVectorPVA(mainoffset[~np.isnan(mainoffset)]+np.pi, np.ones(len(mainoffset[~np.isnan(mainoffset)])))
-                statsdf=pd.DataFrame({'pvaoffset_circmean':[circmean(oldoffset,high=np.pi, low=-np.pi)],
-                                      'pvaoffset_circvar': [1-offsetPvaLenold[0]],
+
+                #offsetPvaold, offsetPvaLenold = computeVectorPVA(oldoffset+np.pi, np.ones(len(oldoffset)))
+                #offsetPva, offsetPvaLen = computeVectorPVA(mainoffset[~np.isnan(mainoffset)]+np.pi, np.ones(len(mainoffset[~np.isnan(mainoffset)])))
+                statsdf=pd.DataFrame({'pvaoffset_circmean':[circmean(oldoffset[~np.isnan(oldoffset)],high=np.pi, low=-np.pi)],
+                                      'pvaoffset_circvar': [circvar(oldoffset[~np.isnan(oldoffset)])],
                                       'mainoffset_circmean': [circmean(mainoffset[~np.isnan(mainoffset)],high=np.pi, low=-np.pi)],
-                                      'mainoffset_circvar': [1-offsetPvaLen[0]] })
+                                      'mainoffset_circvar': [circvar(mainoffset[~np.isnan(mainoffset)])] })
                 for o in range(maxOffsetN):
                     mo = np.asarray(list(df['offset{}'.format(o+1)].values))
                     if np.isnan(mo).sum() == len(mo): continue
-                    offsetPva, offsetPvaLen = computeVectorPVA(mo[~np.isnan(mo)]+np.pi, np.ones(len(mo[~np.isnan(mo)])))
+                    #offsetPva, offsetPvaLen = computeVectorPVA(mo[~np.isnan(mo)]+np.pi, np.ones(len(mo[~np.isnan(mo)])))
                     statsdf['offset{}_circmean'.format(o+1)] = [circmean(mo[~np.isnan(mo)],high=np.pi, low=-np.pi)]
-                    statsdf['offset{}_circvar'.format(o+1)] = 1-offsetPvaLen[0]
+                    statsdf['offset{}_circvar'.format(o+1)] = circvar(mo[~np.isnan(mo)])
                     statsdf['offset{}_percenttime'.format(o+1)] = np.sum((~np.isnan(mo)).astype('int'), axis=0)/len(mo)*100
 
                 # add group info
