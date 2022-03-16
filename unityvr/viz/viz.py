@@ -10,7 +10,7 @@ from unityvr.viz import utils
 
 # general purpose
 def stripplotWithLines(df, valvar, groupvar,huevar, axs, xlab, ylab, ylimvals,
-                       filtering=False, filterval=0, filtervar='None', normalize=False, normgroup='None', palette='tab20b_r'):
+                       filtering=False, filterval=0, filtervar='None', normalize=False, normgroup='None', palette='tab20b_r', order='None'):
     import matplotlib.colors as colors
 
     samples = list(np.unique(df[huevar].values))
@@ -40,8 +40,14 @@ def stripplotWithLines(df, valvar, groupvar,huevar, axs, xlab, ylab, ylimvals,
 
         jitter = np.random.uniform(low=-0.1,high=0.1, size=len(groups))
 
-        axs.plot(np.arange(len(groups))+jitter, toplot,'o', color=myCMap.to_rgba(s+1), label=sample)
-        axs.plot(np.arange(len(groups))+jitter, toplot,'-', color=myCMap.to_rgba(s+1))
+        if order != 'None':
+            groupnames = [groupnames[i] for i in order]
+            toplot = [toplot[i] for i in order]
+            axs.plot(np.arange(len(groups))+jitter, toplot,'o', color=myCMap.to_rgba(s+1), label=sample)
+            axs.plot(np.arange(len(groups))+jitter, toplot,'-', color=myCMap.to_rgba(s+1))
+        else:
+            axs.plot(np.arange(len(groups))+jitter, toplot,'o', color=myCMap.to_rgba(s+1), label=sample)
+            axs.plot(np.arange(len(groups))+jitter, toplot,'-', color=myCMap.to_rgba(s+1))
 
 
     # beautification
