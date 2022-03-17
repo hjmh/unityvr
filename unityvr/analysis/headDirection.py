@@ -110,15 +110,20 @@ def findDFFPeaks(dff,radpos,dffth,minwidth=2):
     peaks = peaks[dff[peaks]>dffth]
     peaksfilt = peaks[radpos[peaks]>-np.pi]
     peaksfilt = peaks[radpos[peaks]<=np.pi]
-    peaksrad = radpos[peaksfilt]
+
+    #filter out peaks that are close in circular distance
+    #peaksfilt = np.sort(peaksfilt)
+    #if len(peaksfilt) > 1:
+    #    if circDistAbs(radpos[peaksfilt][0],radpos[peaksfilt][-1]) < np.pi/8:
+    #        peaksfilt = peaksfilt[:-1]
 
     return peaks, peaksfilt
 
-def getOffsetCandidates(expDf,minwidth=2, useBrightAlignedAngle=True):
+def getOffsetCandidates(expDf,minwidth=4, useBrightAlignedAngle=True):
     nroi = getRoiNum(expDf)
     roidat = expDf[['slice{}'.format(i+1) for i in range(nroi)]]
     tpts = len(roidat)
-    dffth = roidat.to_numpy().reshape(nroi*tpts,1).mean() - roidat.to_numpy().reshape(nroi*tpts,1).std()/4
+    dffth = roidat.to_numpy().reshape(nroi*tpts,1).mean() #- roidat.to_numpy().reshape(nroi*tpts,1).std()/8
 
     rawoffset = [None] * tpts
     rawoffsetLoc = [None] * tpts
@@ -162,7 +167,7 @@ def getArcRadPos(nroi, min=0, max=2*np.pi):
     return np.linspace(0, 2*np.pi, nroi+1)[:-1] +(np.pi/nroi)
 
 
-def getOffsetGroups(rawoffset, maxOffsetN=3, kernelfactordenom=1.5, peakwidth=1, peakheight=.05):
+def getOffsetGroups(rawoffset, maxOffsetN=3, kernelfactordenom=1.5, peakwidth=2, peakheight=.1):
     from scipy import stats as sts
     from scipy.signal import find_peaks
     # Use offset candidate histogram to estimate distribution (KDE) and find peaks
@@ -183,8 +188,11 @@ def getOffsetGroups(rawoffset, maxOffsetN=3, kernelfactordenom=1.5, peakwidth=1,
     #filter peaks to be within -pi and pi
     kdepeaks = kdepeaks[np.round(samplpts[kdepeaks],3)>-np.pi]
     kdepeaks = kdepeaks[np.round(samplpts[kdepeaks],3)<=np.pi]
-    if (len(kdepeaks)>1) and (abs(circDist(np.round(samplpts[kdepeaks[0]],3),np.round(samplpts[kdepeaks[-1]],3))) < 0.1):
-        kdepeaks = kdepeaks[:maxOffsetN]
+
+    #filter out peaks that are close in circular distance
+    kdepeaks = np.sort(kdepeaks)
+    if (len(kdepeaks)>1) and circDistAbs(np.round(samplpts[kdepeaks[0]],3),np.round(samplpts[kdepeaks[-1]],3)) < np.pi/8:
+        kdepeaks = kdepeaks[:-1]
     kdeOffsets = np.nan*np.ones(maxOffsetN)
     kdeOffsets[:min(maxOffsetN,len(kdepeaks))] = np.round(samplpts[kdepeaks],3)
 
@@ -228,13 +236,13 @@ def groupOffsetCandidates(rawoffset,rawoffsetLoc,rawoffsetDFF, kdeOffsets, maxOf
     return offsetArray, npeaks
 
 
-def getOffsetFromDFFPeaks(expDf, maxOffsetN=3, minwidth=np.pi/4):
+def getOffsetFromDFFPeaks(expDf, maxOffsetN=3, minwidth=4, peakheight=.02, peakwidth=5):
     # (1) Find peaks in DFF distributions and (2) compute raw offsets
-    rawoffset, rawoffsetLoc, rawoffsetDFF = getOffsetCandidates(expDf, minwidth=np.pi/4)
+    rawoffset, rawoffsetLoc, rawoffsetDFF = getOffsetCandidates(expDf, minwidth=minwidth)
 
     # (3) Create histogram, (4) perform KDE and (5) find peaks**
     kdevals, samplpts, kdepeaks, kdeOffsets = getOffsetGroups(rawoffset,maxOffsetN,kernelfactordenom=1.5,\
-                                                                 peakwidth=np.pi/4, peakheight=.05)
+                                                                 peakwidth=peakwidth, peakheight=peakheight)
 
     # (6) Classify each frame's offset computed earlier as belonging to one or multiple peaks KDE distribution
     with warnings.catch_warnings():
