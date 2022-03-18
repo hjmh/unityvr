@@ -14,6 +14,7 @@ scipy = "^1.6.0"
 xarray = "^0.17.0"
 numpy-ext = "^0.9.5"
 seaborn = "^0.11.2"
+astropy = "^5.0.2"
 
 [tool.poetry.dev-dependencies]
 
