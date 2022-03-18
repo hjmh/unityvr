@@ -17,7 +17,6 @@ def position(uvrDat, derive = True, rotate_by = None, filter_date = '2021-09-08'
     # set derive = True if you want to compute derived quantities (ds, s, dTh (change in angle), radangle (angle in radians(-pi,pi)))
     # rotate_by: angle (degrees) by which to rotate the trajectory to ensure the bright part of the panorama is at 180 degree heading.
     # filter_date: date of experiment after which right handed angle convention will not be forced when loading posDf; this is because converting from Unity's left handed angle convention to right handed convention was implemented after a certain date in the preproc.py file
-    #correct_convention: set to True if you want to correct the angle convention for preprocessed data
 
     posDf = uvrDat.posDf
 
@@ -34,13 +33,13 @@ def position(uvrDat, derive = True, rotate_by = None, filter_date = '2021-09-08'
         posDf['dx'], posDf['dy'] = rotation_deg(posDf['dx'],posDf['dy'],rotate_by)
         posDf['dxattempt'], posDf['dyattempt'] = rotation_deg(posDf['dxattempt'],posDf['dyattempt'],rotate_by)
         posDf['angle'] = (posDf['angle']+rotate_by)%360
-        uvrDat.metadata['rotated_by'] = rotate_by
+        uvrDat.metadata['rotated_by'] = (uvrDat.metadata['rotated_by']+rotate_by)%360 if ('rotated_by' in uvrDat.metadata) else (rotate_by%360)
 
     #add dc2cm conversion factor
     posDf.dc2cm = 10
 
     if derive:
-        posDf['ds'] = np.sqrt(posDf['dx']**2+posDf['y']**2)
+        posDf['ds'] = np.sqrt(posDf['dx']**2+posDf['dy']**2)
         posDf['s'] = np.cumsum(posDf['ds'])
         posDf['dTh'] = (np.diff(posDf['angle'],prepend=posDf['angle'].iloc[0]) + 180)%360 - 180
         posDf['radangle'] = ((posDf['angle']+180)%360-180)*np.pi/180
