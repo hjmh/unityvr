@@ -72,11 +72,9 @@ def shape(posDf, step = None, interp='linear', stitch=False, plot = False, plots
         fig0 = plt.figure()
         ax01 = fig0.add_subplot(111)
         ax02 = ax01.twiny()
-        ax01.plot(posDf['s'], posDf['time'], 'k', label = r"$S_{time}$");
-        ax02.plot(np.cumsum(shapeDf['ds']), shapeDf['time'], 'r', label = r"$S_{shape}$");
-        ax01.set_ylabel("time")
-        ax01.set_xlabel(r"$S_{time}$")
-        ax02.set_xlabel(r"$S_{shape}$")
+        ax01.plot(posDf['s'], 'k', label = r"$S_{time}$");
+        ax02.plot(shapeDf['s'], 'r', label = r"$S_{shape}$");
+        ax01.set_ylabel(r"$S$")
         fig0.legend(loc = "center right")
 
         fig1, ax1 = viz.plotTrajwithParameterandCondition(shapeDf, figsize=(10,5), parameter='angle')
