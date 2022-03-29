@@ -80,6 +80,8 @@ def shape(posDf, step = None, interp='linear', stitch=False, plot = False, plots
         fig1, ax1 = viz.plotTrajwithParameterandCondition(shapeDf, figsize=(10,5), parameter='angle')
         if plotsave:
             fig1.savefig(getTrajFigName("walking_trajectory_shape_space",saveDir,uvrDat.metadata))
+            fig0.savefig(getTrajFigName("transformed_cumulative_pathlength",
+                                    saveDir,uvrDat.metadata))
 
     return shapeDf
 
@@ -172,7 +174,7 @@ def intersection(x1,x2,x3,x4,y1,y2,y3,y4):
             xs >= min(x3,x4) and xs <= max(x3,x4)):
             return xs, ys
 
-def extractVoltes(shapeDf, res=0.05, L_thresh_min = 0.1, L_thresh_max = 1):
+def extractVoltes(shapeDf, res=0.1, L_thresh_min = 0.2, L_thresh_max = 3):
 
     #resolution of x only considers points spaced x distance apart on the trajectory to find intersections
 

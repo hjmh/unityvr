@@ -19,9 +19,9 @@ def vonmises_pdf(x, mu, kappa):
     V = np.exp((kappa)*np.cos((x-mu)))/(2*np.pi*i0(kappa))
     return V
 
-def sum_of_vonmises_pdf(x, mu1, kappa1, mu2, kappa2):
+def sum_of_vonmises_pdf(x, mu1, mu2, kappa):
     #mixture of vonmises function with 4 parameters
-    V = 0.5*(vonmises_pdf(x, mu1, kappa1)+vonmises_pdf(x, mu2, kappa2))
+    V = 0.5*(vonmises_pdf(x, mu1, kappa)+vonmises_pdf(x, mu2, kappa))
     return V
 
 #function to fit data to the von mises pdf
@@ -57,7 +57,7 @@ def fit_vonmises(degAngles, binwidth = 20, plot = False, plotsave=False, saveDir
     sqd = np.sum(np.square(p-fit_func))
 
     #decide whether distribution is unimodal
-    notFit = np.all([p_value<=0.1, headingPVAmag<0.5])
+    notFit = ~np.any([p_value>0.1, headingPVAmag>0.5])
 
     #create a neitherFit variable
     neitherFit = False
@@ -65,8 +65,8 @@ def fit_vonmises(degAngles, binwidth = 20, plot = False, plotsave=False, saveDir
     #if not unimodal:
     #fit p as a function of theta to a sum of vonmises
     if notFit:
-        params, _ = curve_fit(sum_of_vonmises_pdf, theta, p, bounds=([0,0,0,0],[2*np.pi,np.inf,2*np.pi,np.inf]))
-        fit_func = sum_of_vonmises_pdf(theta, params[0], params[1], params[2], params[3])
+        params, _ = curve_fit(sum_of_vonmises_pdf, theta, p, bounds=([0,0,0],[2*np.pi,2*np.pi,np.inf]))
+        fit_func = sum_of_vonmises_pdf(theta, params[0], params[1], params[2])
 
         #compute kolmogorov-smirnoff stat
         [ks, p_value] = sts.ks_2samp(p, fit_func)
@@ -75,33 +75,30 @@ def fit_vonmises(degAngles, binwidth = 20, plot = False, plotsave=False, saveDir
         sqd = np.sum(np.square(p-fit_func))
 
         #decide whether distribution is bimodal:
-        neitherFit = p_value<=0.1
+        neitherFit =  ~(p_value>0.1)
 
     if neitherFit:
         print("Neither unimodal nor bimodal fit.")
         mu1 = float("NaN")
-        kappa1 = float("NaN")
         mu2 =  float("NaN")
-        kappa2 = float("NaN")
+        kappa = float("NaN")
         p_value =  float("NaN")
         sqd = float("NaN")
 
     else:
         if notFit:
-            mus = np.array([params[0],params[2]])
-            kappas = np.array([params[1],params[3]])
-            kappa1 = np.max(kappas); kappa2=np.min(kappas)
-            mu1 = mus[np.argmax(kappas)]; mu2 = mus[np.argmin(kappas)]
+            mu1 = params[0]
+            mu2 = params[1]
+            kappa = params[2]
 
         else:
             mu1 = params[0]
-            kappa1 = params[1]
             mu2 = None
-            kappa2 = None
+            kappa = params[1]
 
         if plot:
-            if notFit: V = sum_of_vonmises_pdf(np.linspace(0,2*np.pi,num=50), mu1, kappa1, mu2, kappa2)
-            else: V = vonmises_pdf(np.linspace(0,2*np.pi,num=50), mu1, kappa1)
+            if notFit: V = sum_of_vonmises_pdf(np.linspace(0,2*np.pi,num=50), mu1, mu2, kappa)
+            else: V = vonmises_pdf(np.linspace(0,2*np.pi,num=50), mu1, kappa)
 
             #plot 1
             plt.plot(np.linspace(0,360,num=50), V, 'k-')
@@ -112,9 +109,9 @@ def fit_vonmises(degAngles, binwidth = 20, plot = False, plotsave=False, saveDir
 
             #plot 2
             fig, ax = plt.subplots(subplot_kw={'projection': 'polar'})
-            ax.plot(mu1, kappa1, 'ro', alpha=0.5)
+            ax.plot(mu1, kappa, 'ro', alpha=0.5)
             if notFit:
-                ax.plot(mu2, kappa2, 'bo', alpha=0.5)
+                ax.plot(mu2, kappa, 'bo', alpha=0.5)
             ax.set_yticks([0.5,1])
             ax.set_theta_zero_location("E")
             ax.set_xticks(np.pi/180 * np.arange(-180,  180,  45))
@@ -125,4 +122,4 @@ def fit_vonmises(degAngles, binwidth = 20, plot = False, plotsave=False, saveDir
 
             #returns mu in degree
 
-    return mu1*180/np.pi, kappa1, mu2*180/np.pi if mu2 is not None else mu2, kappa2, ks, p_value, sqd
+    return mu1*180/np.pi, mu2*180/np.pi if mu2 is not None else mu2, kappa, ks, p_value, sqd
