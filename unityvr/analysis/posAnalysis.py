@@ -126,12 +126,3 @@ def computeVelocities(posDf, convf = 10, window=7, order=3):
     posDf['vT_filt'] = savgol_filter(posDf.vT, window, order)
     posDf['vR_filt'] = savgol_filter(posDf.vR, window, order)
     return posDf
-
-
-#add the derived quantities and clipping information to the saved dataframe
-def posDfUpdate(posDf, uvrDat, saveDir, saveName):
-
-    #update uvrDat
-    uvrDat.posDf = posDf
-    savepath = uvrDat.saveData(saveDir, saveName)
-    print("location:", saveDir)

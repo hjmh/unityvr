@@ -238,10 +238,3 @@ def number_of_voltes(shapeDf):
 
 def volte_tortuosity_difference(shapeDf):
     return np.nanmean(np.log(shapeDf.loc[shapeDf['voltes']]['tortuosity']))-np.nanmean(np.log(shapeDf.loc[~shapeDf['voltes']]['tortuosity']))
-
-def shapeDfUpdate(shapeDf, uvrDat, saveDir, saveName):
-    savepath = sep.join([saveDir,saveName,'uvr'])
-
-    #update uvrDat
-    shapeDf.to_csv(sep.join([savepath,'shapeDf.csv']))
-    print("location:", saveDir)
