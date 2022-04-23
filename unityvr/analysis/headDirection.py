@@ -353,7 +353,7 @@ def makeOffsetStatsDf(offsetTimeSeries, maxOffsetN, flies, conditions, condnames
 # Calcium traces vizualization .................................................
 # Some ROI visualizations .......................................
 
-def plotDFFheatmap(ax, df, roiname='slice', addColorbar=True,lefthanded=False):
+def plotDFFheatmap(ax, df, roiname='slice', lefthanded=False):
     """
     Plot heatmap-style visualization of calcium imaging roi time series.
     We assume that calcium imaging rois are sorted in a left-handed rotational reference frame
@@ -370,10 +370,9 @@ def plotDFFheatmap(ax, df, roiname='slice', addColorbar=True,lefthanded=False):
     ax.set_ylabel('\nROIs (n = {0})'.format(df[roinames].values.shape[1]))
 
     ax.set_ylim(-0.5,nroi-0.5)
-
-    if addColorbar:
-        # Add colorbar, make sure to specify tick locations to match desired ticklabels
-        cbar = fig.colorbar(cax)
-        cbar.set_label('$(F - F_0) / F_0$ (per ROI)')  # vertically oriented colorbar
-
     return ax, cax
+
+def addDFFColorbar(fig, cax, ax):
+    # Add colorbar, make sure to specify tick locations to match desired ticklabels
+    cbar = fig.colorbar(cax, ax=ax)
+    cbar.set_label('$(F - F_0) / F_0$ (per ROI)')  # vertically oriented colorbar
