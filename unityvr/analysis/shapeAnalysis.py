@@ -211,13 +211,23 @@ def extractVoltes(shapeDf, res=0.1, L_thresh_min = 0.2, L_thresh_max = 3):
 
     return df
 
-def shapeToTimeBoolean(posDf,shapeDf,label):
-
+def shapeToTime(posDf,shapeDf,label):
+    
+    data_type = shapeDf.dtypes[label]
+    if data_type == 'bool':
+        interp_type = 'int'
+        interp_kind = 'nearest'
+        fill = 0
+    else:
+        interp_type = data_type
+        interp_kind = 'linear'
+        fill = float("NaN")
+    
     pDf = posDf.copy()
 
-    transform = sp.interpolate.interp1d(shapeDf['time'],shapeDf[label].astype('int'),kind="nearest",bounds_error=False,fill_value=0)
+    transform = sp.interpolate.interp1d(shapeDf['time'],shapeDf[label].astype(interp_type),kind=interp_kind,bounds_error=False,fill_value=fill)
 
-    pDf[label] = transform(pDf['time']).astype('bool')
+    pDf[label] = transform(pDf['time']).astype(data_type)
 
     pDf = carryAttrs(pDf, posDf)
 
