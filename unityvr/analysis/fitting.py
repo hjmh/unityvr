@@ -25,7 +25,7 @@ def sum_of_vonmises_pdf(x, mu1, mu2, kappa):
     return V
 
 #function to fit data to the von mises pdf
-def fit_vonmises(degAngles, binwidth = 20, plot = False, plotsave=False, saveDir=None, uvrDat=None):
+def fit_vonmises(degAngles, binwidth = 20, plot = False, plotsave=False, saveDir=None, uvrDat=None,MFev=2000):
     # in degrees
 
     #width to radians
@@ -47,7 +47,7 @@ def fit_vonmises(degAngles, binwidth = 20, plot = False, plotsave=False, saveDir
     plt.step(theta*180/np.pi, p)
 
     #fit p as a function of theta
-    params, _ = curve_fit(vonmises_pdf, theta, p, bounds=([0,0],[2*np.pi,np.inf]))
+    params, _ = curve_fit(vonmises_pdf, theta, p, bounds=([0,0],[2*np.pi,np.inf]),maxfev=MFev)
     fit_func = vonmises_pdf(theta, params[0], params[1])
 
     #compute kolmogorov-smirnoff stat
@@ -65,7 +65,7 @@ def fit_vonmises(degAngles, binwidth = 20, plot = False, plotsave=False, saveDir
     #if not unimodal:
     #fit p as a function of theta to a sum of vonmises
     if notFit:
-        params, _ = curve_fit(sum_of_vonmises_pdf, theta, p, bounds=([0,0,0],[2*np.pi,2*np.pi,np.inf]))
+        params, _ = curve_fit(sum_of_vonmises_pdf, theta, p, bounds=([0,0,0],[2*np.pi,2*np.pi,np.inf]),maxfev=MFev)
         fit_func = sum_of_vonmises_pdf(theta, params[0], params[1], params[2])
 
         #compute kolmogorov-smirnoff stat
