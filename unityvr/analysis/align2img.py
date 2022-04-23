@@ -96,8 +96,6 @@ def loadAndAlignPreprocessedData(root, subdir, flies, conditions, trials, panDef
                 imgInd, volFramePos = findImgFrameTimes(uvrDat,imgMetadat)
                 expDf = combineImagingAndPosDf(imgDat, posDf, volFramePos)
 
-                expDf = combineImagingAndPosDf(imgDat, posDf, volFramePos)
-
                 if 'B2s' in panDefs.getPanID(cond) and condtype == '2d':
                     expDf['angleBrightAligned'] = np.mod(expDf['angle'].values-0*180/np.pi,360)
                 else:
