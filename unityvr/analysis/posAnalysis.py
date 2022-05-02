@@ -63,6 +63,7 @@ def flightSeg(posDf, thresh, freq=120, plot = False, freq_content = 0.5, plotsav
 
     # 2nd row of the spectrogram seems to contain sufficient information to segment flight bouts
     flight = sp.interpolate.interp1d(t,F[spec_row,:]>thresh, kind='nearest', bounds_error=False, fill_value=0)
+    
     df['flight'] = flight(df['time'])
 
     #carry attributes
@@ -88,7 +89,7 @@ def flightClip(posDf, minT = 0, maxT = 485, plot = False, plotsave=False, saveDi
     df = posDf.copy()
 
     #clip the position values according to the minT and maxT
-    df['clipped'] = ((posDf['time']<=minT) | (posDf['time']>=maxT))
+    df['clipped'] = ((posDf['time']<=minT) | (posDf['time']>=maxT)).astype('float')
 
     #carry attributes
     df = carryAttrs(df,posDf)
