@@ -66,6 +66,26 @@ def combineImagingAndPosDf(imgDat, posDf, volFramePos):
         expDf['vR'] = posDf.vR.values[volFramePos]
         expDf['vTfilt'] = posDf.vT_filt.values[volFramePos]
         expDf['vRfilt'] = posDf.vR_filt.values[volFramePos]
+    try:
+        expDf['s'] = posDf.s.values[volFramePos]
+        expDf['ds'] = posDf.ds.values[volFramePos]
+        expDf['dx'] = posDf.dx.values[volFramePos]
+        expDf['dy'] = posDf.dx.values[volFramePos]
+        expDf['tortuosity'] = posDf.tortuosity.values[volFramePos]
+        expDf['curvy'] = posDf.curvy.values[volFramePos]
+        expDf['voltes'] = posDf.voltes.values[volFramePos]
+        expDf['x_stitch'] = posDf.x_stitch.values[volFramePos]
+        expDf['y_stitch'] = posDf.y_stitch.values[volFramePos]
+    except AttributeError:
+        print("posDf has not been processed.")
+    try:
+        expDf['flight'] = posDf.flight.values[volFramePos]
+    except AttributeError:
+        expDf['flight'] = np.zeros(np.shape(expDf['x']))
+    try:
+        expDf['clipped'] = posDf.clipped.values[volFramePos]
+    except AttributeError:
+        expDf['clipped'] = np.zeros(np.shape(expDf['x']))
     return expDf
 
 
