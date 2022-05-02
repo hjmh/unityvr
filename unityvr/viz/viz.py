@@ -160,21 +160,29 @@ def plotTrajwithParameterandCondition(df, figsize, parameter='angle',
                                       mycmap = 'twilight_shifted',
                                       transform = lambda x: x,
                                       plotOriginal=True,
+                                      stitch = False,
                                       mylimvals = (0,360)
                                      ):
 
     if condition is None: condition = np.ones(np.shape(df['x']),dtype='bool')
 
     fig, axs = plt.subplots(1,2,figsize=figsize, gridspec_kw={'width_ratios':[20,1]})
-
+    
+    if stitch:
+        x_label='x_stitch'
+        y_label='y_stitch'
+    else:
+        x_label='x'
+        y_label='y'
+    
     if plotOriginal:
-        axs[0].plot(df['x']*df.dc2cm,df['y']*df.dc2cm,color=color, linewidth=0.5)
-
-    axs[0],cb = plotTraj(axs[0],df.loc[condition].x.values*df.dc2cm,
-                         df.loc[condition].y.values*df.dc2cm,
-                         df[parameter].loc[condition].transform(transform),
-                         5,"cm", mycmap, mylimvals)
-
-    plt.colorbar(cb,cax=axs[1],label=parameter)
+        axs[0].plot(df[x_label]*df.dc2cm,df[y_label]*df.dc2cm,color=color, linewidth=0.5)
+    
+    if len(df.loc[condition])>0:
+        axs[0],cb = plotTraj(axs[0],df.loc[condition,x_label].values*df.dc2cm,
+                             df.loc[condition,y_label].values*df.dc2cm,
+                             df[parameter].loc[condition].transform(transform),
+                             5,"cm", mycmap, mylimvals)
+        plt.colorbar(cb,cax=axs[1],label=parameter)
 
     return fig, axs
