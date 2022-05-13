@@ -186,3 +186,39 @@ def plotTrajwithParameterandCondition(df, figsize, parameter='angle',
         plt.colorbar(cb,cax=axs[1],label=parameter)
 
     return fig, axs
+
+def circ_point_dist_plotter(ax,degrees,bin_size,zero_direction,
+                            start_ang,bottom,min_ax_ang,max_ax_ang,
+                            rounds_res=1,sign=0,color='k',
+                            alpha=0.85,markersize=5,
+                            pointscale=0.15,
+                            binscale=0.27,ylim_max=2):
+    
+    a, b = np.histogram(degrees, bins=np.arange(start_ang, 360+bin_size+start_ang, bin_size))
+    centers = np.deg2rad(np.ediff1d(b)//2 + b[:-1])
+    #ax.bar(centers, a, width=np.deg2rad(bin_size), bottom=bottom, alpha = 0.5, edgecolor='gray')
+    for i in range(np.max(a)):
+        ax.plot(centers[(a-i)>0]-(np.deg2rad(bin_size*binscale)*sign),
+                bottom+(a[(a-i)>0]-i)*pointscale,'o',color=color,alpha=alpha,markersize=markersize)
+    ax.set_theta_zero_location(zero_direction)
+    ax.set_thetamin(min_ax_ang)
+    ax.set_thetamax(max_ax_ang)
+    ax.set_ylim(0,ylim_max)
+    
+def full_circular_plotter(ax, df, cond, k_min, k_max, R, muvar='mu', color='grey', sign=0, alpha=0.85, label=None):
+    
+    x = df[muvar].where(cond & (df['kappa']>k_min)).astype('float').values
+    pva = np.nanmean(np.exp(1j*np.deg2rad(x)))
+
+    circ_point_dist_plotter(ax,x,10,"N",0,1,-180,180,alpha=alpha,color=color,sign=sign)
+
+    ##MODIFY HEAD LENGTH AND WIDTH IF ARROW NOT VISIBLE
+    ax.arrow(np.angle(pva), 0, 0, np.round(np.abs(pva),2), width = 0.1, lw = 0.1,
+        head_width = 0.23, head_length=0.11, color=color, label=label, zorder=1, length_includes_head=True)
+
+    #max condition only applies to lines
+    x_prime = df[muvar].where(cond & (df['kappa']<k_max)).astype('float').values*np.pi/180
+    y = df['kappa'].where(cond & (df['kappa']<k_max)).astype('float').values/R
+
+    for j,_ in enumerate(x):
+        ax.plot([0,x_prime[j]],[0,y[j]],ls='-',alpha=alpha,zorder=-1,color=color)
