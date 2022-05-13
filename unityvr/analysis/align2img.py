@@ -6,6 +6,7 @@ import pandas as pd
 from os.path import sep
 import json
 from unityvr.preproc import logproc
+from unityvr.analysis import utils
 
 def findImgFrameTimes(uvrDat,imgMetadat):
 
@@ -100,6 +101,9 @@ def loadAndAlignPreprocessedData(root, subdir, flies, conditions, trials, panDef
                     expDf['angleBrightAligned'] = np.mod(expDf['angle'].values-0*180/np.pi,360)
                 else:
                     expDf['angleBrightAligned'] = np.mod(expDf['angle'].values-panDefs.panOrigin[panDefs.getPanID(cond)]*180/np.pi,360)
+                    xr, yr = utils.rotatepath(expDf.x.values,expDf.y.values, -panDefs.panOrigin[panDefs.getPanID(cond)])
+                    expDf.x = xr
+                    expDf.y = yr
                 #expDf['flightmask'] = np.logical_and(expDf.vTfilt.values < maxVt, expDf.vTfilt.values > minVt)
                 expDf['fly'] = fly
                 expDf['condition'] = cond

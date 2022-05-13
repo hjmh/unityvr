@@ -5,6 +5,7 @@ import warnings
 import pandas as pd
 from scipy.stats import circmean
 
+
 # Functions related to characterizing bump position .......................................
 ## Circular calculation utilities
 def circDistAbs(angle1,angle2):
@@ -32,18 +33,6 @@ def computeVectorPVA(angle, weights):
 
     pvaLen = np.hypot(pva[0],pva[1])
     return pva, pvaLen
-
-def computeVectorPVA(angle, weights):
-    """ Compute population vector average of angles
-    """
-    pva_x = np.cos(angle)*weights
-    pva_y = np.sin(angle)*weights
-
-    pva = np.vstack((sum(pva_x)/len(pva_x), sum(pva_y)/len(pva_x)))
-
-    pvaLen = np.hypot(pva[0],pva[1])
-    return pva, pvaLen
-
 
 ## Description of the (EB) bump related functions
 def getRoiNum(df, roiname = 'slice'):
