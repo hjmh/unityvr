@@ -30,15 +30,18 @@ def shape(posDf, step = None, interp='linear', stitch=False, plot = False, plots
             interp = 'nearest'
         if stitch:
             df = posDf.where(posDf['flight']==0).copy()
-            for i,fstart in enumerate(np.array(posDf['frame'].loc[posDf['flight'].diff()==1])):
-                fstop = np.array(posDf['frame'].loc[posDf['flight'].diff()==-1])[i]
-                df.loc[df['frame']>=fstop,'x'] += float(posDf.loc[posDf['frame']==fstart-1]['x'])-float(posDf.loc[posDf['frame']==fstop]['x'])
-                df.loc[df['frame']>=fstop,'y'] += float(posDf.loc[posDf['frame']==fstart-1]['y'])-float(posDf.loc[posDf['frame']==fstop]['y'])
+            
+            counter = 'count' if 'count' in posDf else 'frame'
+            
+            for i,fstart in enumerate(np.array(posDf[counter].loc[posDf['flight'].diff()==1])):
+                fstop = np.array(posDf[counter].loc[posDf['flight'].diff()==-1])[i]
+                df.loc[df[counter]>=fstop,'x'] += float(posDf.loc[posDf[counter]==fstart-1]['x'])-float(posDf.loc[posDf[counter]==fstop]['x'])
+                df.loc[df[counter]>=fstop,'y'] += float(posDf.loc[posDf[counter]==fstart-1]['y'])-float(posDf.loc[posDf[counter]==fstop]['y'])
             posDf = carryAttrs(df.dropna(subset=['x','y']),posDf)
 
-    # if the step length is not specified, choose the median velocity as the step length
+    # if the step length is not specified, choose the mean velocity of the fly
     if step is None:
-        step = np.nanmedian(posDf['ds'])
+        step = np.nanmean(posDf['ds'])
 
     # get trajectory
     points = np.array([posDf['x'].values,posDf['y'].values]).T
@@ -237,15 +240,15 @@ def shapeToTime(posDf,shapeDf,label,new_name=None):
     if data_type == 'bool':
         interp_type = 'int'
         interp_kind = 'nearest'
-        fill = 0
+        #fill = 0
     else:
         interp_type = data_type
         interp_kind = 'linear'
-        fill = float("NaN")
+        #fill = float("NaN")
     
     pDf = posDf.copy()
 
-    transform = sp.interpolate.interp1d(shapeDf['time'],shapeDf[label].astype(interp_type),kind=interp_kind,bounds_error=False,fill_value=fill)
+    transform = sp.interpolate.interp1d(shapeDf['time'],shapeDf[label].astype(interp_type),kind=interp_kind,bounds_error=False,fill_value="extrapolate")
     
     if new_name is None:
         pDf[label] = transform(pDf['time']).astype(data_type)

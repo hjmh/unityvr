@@ -5,6 +5,9 @@ from matplotlib import patches
 import matplotlib.pyplot as plt
 import numpy as np
 from os.path import sep, isfile, exists
+import pandas as pd
+from pandas.api.types import CategoricalDtype
+import seaborn as sns
 
 from unityvr.viz import utils
 
@@ -205,12 +208,13 @@ def circ_point_dist_plotter(ax,degrees,bin_size,zero_direction,
     ax.set_thetamax(max_ax_ang)
     ax.set_ylim(0,ylim_max)
     
-def full_circular_plotter(ax, df, cond, k_min, k_max, R, muvar='mu', color='grey', sign=0, alpha=0.85, label=None):
+def full_circular_plotter(ax, df, cond, k_min, k_max, R, muvar='mu', color='grey', sign=0, alpha=0.85, label=None, outerpoints=True):
     
     x = df[muvar].where(cond & (df['kappa']>k_min)).astype('float').values
     pva = np.nanmean(np.exp(1j*np.deg2rad(x)))
-
-    circ_point_dist_plotter(ax,x,10,"N",0,1,-180,180,alpha=alpha,color=color,sign=sign)
+    
+    if outerpoints:
+        circ_point_dist_plotter(ax,x,10,"N",0,1,-180,180,alpha=alpha,color=color,sign=sign)
 
     ##MODIFY HEAD LENGTH AND WIDTH IF ARROW NOT VISIBLE
     ax.arrow(np.angle(pva), 0, 0, np.round(np.abs(pva),2), width = 0.1, lw = 0.1,
@@ -222,3 +226,28 @@ def full_circular_plotter(ax, df, cond, k_min, k_max, R, muvar='mu', color='grey
 
     for j,_ in enumerate(x):
         ax.plot([0,x_prime[j]],[0,y[j]],ls='-',alpha=alpha,zorder=-1,color=color)
+        
+def linear_ordered_plotter(ax, inDf, order, variable, colormapper = None, hue_var='flyid', ylim=(-190,190)):
+    
+    pal = "tab20b_r" if (colormapper is None) else sns.color_palette(colormapper)
+    
+    df = inDf.copy()
+    
+    stims = pd.DataFrame([a + b for a, b in zip(list(order)[::2],list(order)[1::2])],columns={'s'})
+    stims['t'] = "t"+(stims.groupby('s').cumcount()+1).apply(lambda x: "{:02d}".format(x))
+    stims = CategoricalDtype(list(stims['s']+stims['t']), ordered=True)
+
+    df['stimtrial'] = df['stimtrial'].astype(stims)
+
+    sns.lineplot(x = 'stimtrial', y = variable, hue=hue_var, palette=pal, data = 
+                          df,  ax =ax);
+
+    sns.stripplot(x = 'stimtrial', y = variable, hue=hue_var, palette=pal, data = 
+                          df,  ax =ax, jitter=False, label=str());
+    ax.set_ylim(ylim)
+    
+    N = len(df[hue_var].unique())
+    handles, labels = ax.get_legend_handles_labels()
+    ax.legend(handles[:N],labels[:N],bbox_to_anchor=(1.2, 1.2))
+    sns.despine()
+    

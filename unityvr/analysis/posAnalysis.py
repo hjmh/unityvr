@@ -1,11 +1,13 @@
 import numpy as np
-import pandas
+import pandas as pd
 import scipy as sp
 import scipy.signal
 import matplotlib.pyplot as plt
+import json
 
 from unityvr.viz import viz
 from unityvr.analysis.utils import carryAttrs, getTrajFigName
+from unityvr.analysis import align2img
 
 from os.path import sep, exists, join
 
@@ -127,3 +129,32 @@ def computeVelocities(posDf, convf = 10, window=7, order=3):
     posDf['vT_filt'] = savgol_filter(posDf.vT, window, order)
     posDf['vR_filt'] = savgol_filter(posDf.vR, window, order)
     return posDf
+
+def getTimeDf(uvrDat, trialDir, posDf = None, imaging = False, rate = 9.5509):
+    
+    if posDf is None: posDf = uvrDat.posDf
+    
+    if imaging:
+    
+        imgDat = pd.read_csv(sep.join([trialDir.replace('uvr','img'), 
+        'roiDFF.csv'])).drop(columns =['Unnamed: 0'])
+
+        with open(sep.join([trialDir.replace('uvr','img'),'imgMetadata.json'])) as json_file:
+            imgMetadat = json.load(json_file)
+
+        imgInd, volFramePos = align2img.findImgFrameTimes(uvrDat, imgMetadat)
+
+        timeDf = align2img.combineImagingAndPosDf(imgDat, posDf, volFramePos)
+        timeDf = timeDf.rename(columns = {'time [s]': 'time'})
+    
+    else:
+        timeDf = posDf.iloc[::int(np.round(len(posDf['time'])/(rate*posDf['time'].max()))),:].reset_index().copy()
+        timeDf['ds'] = np.diff(timeDf.s.values,prepend=0)
+        timeDf['dx'] = np.diff(timeDf.x.values,prepend=0)
+        timeDf['dy'] = np.diff(timeDf.y.values,prepend=0)
+        timeDf = timeDf.drop(columns=['index'])
+    
+    timeDf['count'] = np.arange(1,len(timeDf['time'])+1,1)
+    timeDf = carryAttrs(timeDf,posDf)
+    
+    return timeDf
