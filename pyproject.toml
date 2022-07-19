@@ -15,6 +15,8 @@ xarray = "^0.17.0"
 numpy-ext = "^0.9.5"
 seaborn = "^0.11.2"
 astropy = "^5.0.2"
+scikit-image = "^0.19.2"
+statsmodels = "^0.13.2"
 
 [tool.poetry.dev-dependencies]
 

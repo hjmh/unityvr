@@ -31,6 +31,8 @@ class unityVRexperiment:
     ftDf: pd.DataFrame = pd.DataFrame(columns=ftDfCols)
     nidDf: pd.DataFrame = pd.DataFrame(columns=nidDfCols)
     texDf: pd.DataFrame = pd.DataFrame(columns=texDfCols)
+    shapeDf: pd.DataFrame = pd.DataFrame()
+    timeDf: pd.DataFrame = pd.DataFrame()
 
     # object locations
     objDf: pd.DataFrame = pd.DataFrame(columns=objDfCols)
@@ -64,6 +66,8 @@ class unityVRexperiment:
         self.ftDf.to_csv(sep.join([savepath,'ftDf.csv']))
         self.nidDf.to_csv(sep.join([savepath,'nidDf.csv']))
         self.texDf.to_csv(sep.join([savepath,'texDf.csv']))
+        self.shapeDf.to_csv(sep.join([savepath,'shapeDf.csv']))
+        self.timeDf.to_csv(sep.join([savepath,'timeDf.csv']))
 
         return savepath
 
@@ -90,13 +94,27 @@ def loadUVRData(savepath):
     posDf = pd.read_csv(sep.join([savepath,'posDf.csv'])).drop(columns=['Unnamed: 0'])
     ftDf = pd.read_csv(sep.join([savepath,'ftDf.csv'])).drop(columns=['Unnamed: 0'])
     nidDf = pd.read_csv(sep.join([savepath,'nidDf.csv'])).drop(columns=['Unnamed: 0'])
+    
 
     try:
         texDf = pd.read_csv(sep.join([savepath,'texDf.csv'])).drop(columns=['Unnamed: 0'])
     except FileNotFoundError:
         texDf = pd.DataFrame()
         #No texture mapping time series was recorded with this experiment, fill with empty DataFrame
-    uvrexperiment = unityVRexperiment(metadata=metadat,posDf=posDf,ftDf=ftDf,nidDf=nidDf,objDf=objDf,texDf=texDf)
+        
+    try: 
+        shapeDf = pd.read_csv(sep.join([savepath,'shapeDf.csv'])).drop(columns=['Unnamed: 0'])
+    except FileNotFoundError:
+        shapeDf = pd.DataFrame()
+        #Shape dataframe was not computed. Fill with empty DataFrame
+        
+    try: 
+        timeDf = pd.read_csv(sep.join([savepath,'timeDf.csv'])).drop(columns=['Unnamed: 0'])
+    except FileNotFoundError:
+        timeDf = pd.DataFrame()
+        #Shape dataframe was not computed. Fill with empty DataFrame
+        
+    uvrexperiment = unityVRexperiment(metadata=metadat,posDf=posDf,ftDf=ftDf,nidDf=nidDf,objDf=objDf,texDf=texDf,shapeDf=shapeDf,timeDf=timeDf)
 
     return uvrexperiment
 

@@ -1,11 +1,13 @@
 import numpy as np
-import pandas
+import pandas as pd
 import scipy as sp
 import scipy.signal
 import matplotlib.pyplot as plt
+import json
 
 from unityvr.viz import viz
 from unityvr.analysis.utils import carryAttrs, getTrajFigName
+from unityvr.analysis import align2img
 
 from os.path import sep, exists, join
 
@@ -17,7 +19,6 @@ def position(uvrDat, derive = True, rotate_by = None, filter_date = '2021-09-08'
     # set derive = True if you want to compute derived quantities (ds, s, dTh (change in angle), radangle (angle in radians(-pi,pi)))
     # rotate_by: angle (degrees) by which to rotate the trajectory to ensure the bright part of the panorama is at 180 degree heading.
     # filter_date: date of experiment after which right handed angle convention will not be forced when loading posDf; this is because converting from Unity's left handed angle convention to right handed convention was implemented after a certain date in the preproc.py file
-    #correct_convention: set to True if you want to correct the angle convention for preprocessed data
 
     posDf = uvrDat.posDf
 
@@ -34,13 +35,13 @@ def position(uvrDat, derive = True, rotate_by = None, filter_date = '2021-09-08'
         posDf['dx'], posDf['dy'] = rotation_deg(posDf['dx'],posDf['dy'],rotate_by)
         posDf['dxattempt'], posDf['dyattempt'] = rotation_deg(posDf['dxattempt'],posDf['dyattempt'],rotate_by)
         posDf['angle'] = (posDf['angle']+rotate_by)%360
-        uvrDat.metadata['rotated_by'] = rotate_by
+        uvrDat.metadata['rotated_by'] = (uvrDat.metadata['rotated_by']+rotate_by)%360 if ('rotated_by' in uvrDat.metadata) else (rotate_by%360)
 
     #add dc2cm conversion factor
     posDf.dc2cm = 10
 
     if derive:
-        posDf['ds'] = np.sqrt(posDf['dx']**2+posDf['y']**2)
+        posDf['ds'] = np.sqrt(posDf['dx']**2+posDf['dy']**2)
         posDf['s'] = np.cumsum(posDf['ds'])
         posDf['dTh'] = (np.diff(posDf['angle'],prepend=posDf['angle'].iloc[0]) + 180)%360 - 180
         posDf['radangle'] = ((posDf['angle']+180)%360-180)*np.pi/180
@@ -64,6 +65,7 @@ def flightSeg(posDf, thresh, freq=120, plot = False, freq_content = 0.5, plotsav
 
     # 2nd row of the spectrogram seems to contain sufficient information to segment flight bouts
     flight = sp.interpolate.interp1d(t,F[spec_row,:]>thresh, kind='nearest', bounds_error=False, fill_value=0)
+    
     df['flight'] = flight(df['time'])
 
     #carry attributes
@@ -89,7 +91,7 @@ def flightClip(posDf, minT = 0, maxT = 485, plot = False, plotsave=False, saveDi
     df = posDf.copy()
 
     #clip the position values according to the minT and maxT
-    df['clipped'] = ((posDf['time']<=minT) | (posDf['time']>=maxT))
+    df['clipped'] = ((posDf['time']<=minT) | (posDf['time']>=maxT)).astype('float')
 
     #carry attributes
     df = carryAttrs(df,posDf)
@@ -128,11 +130,31 @@ def computeVelocities(posDf, convf = 10, window=7, order=3):
     posDf['vR_filt'] = savgol_filter(posDf.vR, window, order)
     return posDf
 
+def getTimeDf(uvrDat, trialDir, posDf = None, imaging = False, rate = 9.5509):
+    
+    if posDf is None: posDf = uvrDat.posDf
+    
+    if imaging:
+    
+        imgDat = pd.read_csv(sep.join([trialDir.replace('uvr','img'), 
+        'roiDFF.csv'])).drop(columns =['Unnamed: 0'])
 
-#add the derived quantities and clipping information to the saved dataframe
-def posDfUpdate(posDf, uvrDat, saveDir, saveName):
+        with open(sep.join([trialDir.replace('uvr','img'),'imgMetadata.json'])) as json_file:
+            imgMetadat = json.load(json_file)
 
-    #update uvrDat
-    uvrDat.posDf = posDf
-    savepath = uvrDat.saveData(saveDir, saveName)
-    print("location:", saveDir)
+        imgInd, volFramePos = align2img.findImgFrameTimes(uvrDat, imgMetadat)
+
+        timeDf = align2img.combineImagingAndPosDf(imgDat, posDf, volFramePos)
+        timeDf = timeDf.rename(columns = {'time [s]': 'time'})
+    
+    else:
+        timeDf = posDf.iloc[::int(np.round(len(posDf['time'])/(rate*posDf['time'].max()))),:].reset_index().copy()
+        timeDf['ds'] = np.diff(timeDf.s.values,prepend=0)
+        timeDf['dx'] = np.diff(timeDf.x.values,prepend=0)
+        timeDf['dy'] = np.diff(timeDf.y.values,prepend=0)
+        timeDf = timeDf.drop(columns=['index'])
+    
+    timeDf['count'] = np.arange(1,len(timeDf['time'])+1,1)
+    timeDf = carryAttrs(timeDf,posDf)
+    
+    return timeDf

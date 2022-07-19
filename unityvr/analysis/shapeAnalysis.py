@@ -30,15 +30,18 @@ def shape(posDf, step = None, interp='linear', stitch=False, plot = False, plots
             interp = 'nearest'
         if stitch:
             df = posDf.where(posDf['flight']==0).copy()
-            for i,fstart in enumerate(np.array(posDf['frame'].loc[posDf['flight'].diff()==1])):
-                fstop = np.array(posDf['frame'].loc[posDf['flight'].diff()==-1])[i]
-                df.loc[df['frame']>=fstop,'x'] += float(posDf.loc[posDf['frame']==fstart-1]['x'])-float(posDf.loc[posDf['frame']==fstop]['x'])
-                df.loc[df['frame']>=fstop,'y'] += float(posDf.loc[posDf['frame']==fstart-1]['y'])-float(posDf.loc[posDf['frame']==fstop]['y'])
-            posDf = carryAttrs(df.dropna(),posDf)
+            
+            counter = 'count' if 'count' in posDf else 'frame'
+            
+            for i,fstart in enumerate(np.array(posDf[counter].loc[posDf['flight'].diff()==1])):
+                fstop = np.array(posDf[counter].loc[posDf['flight'].diff()==-1])[i]
+                df.loc[df[counter]>=fstop,'x'] += float(posDf.loc[posDf[counter]==fstart-1]['x'])-float(posDf.loc[posDf[counter]==fstop]['x'])
+                df.loc[df[counter]>=fstop,'y'] += float(posDf.loc[posDf[counter]==fstart-1]['y'])-float(posDf.loc[posDf[counter]==fstop]['y'])
+            posDf = carryAttrs(df.dropna(subset=['x','y']),posDf)
 
-    # if the step length is not specified, choose the median velocity as the step length
+    # if the step length is not specified, choose the mean velocity of the fly
     if step is None:
-        step = np.nanmedian(posDf['ds'])
+        step = np.nanmean(posDf['ds'])
 
     # get trajectory
     points = np.array([posDf['x'].values,posDf['y'].values]).T
@@ -72,16 +75,16 @@ def shape(posDf, step = None, interp='linear', stitch=False, plot = False, plots
         fig0 = plt.figure()
         ax01 = fig0.add_subplot(111)
         ax02 = ax01.twiny()
-        ax01.plot(posDf['s'], posDf['time'], 'k', label = r"$S_{time}$");
-        ax02.plot(np.cumsum(shapeDf['ds']), shapeDf['time'], 'r', label = r"$S_{shape}$");
-        ax01.set_ylabel("time")
-        ax01.set_xlabel(r"$S_{time}$")
-        ax02.set_xlabel(r"$S_{shape}$")
+        ax01.plot(posDf['s'], 'k', label = r"$S_{time}$");
+        ax02.plot(shapeDf['s'], 'r', label = r"$S_{shape}$");
+        ax01.set_ylabel(r"$S$")
         fig0.legend(loc = "center right")
 
         fig1, ax1 = viz.plotTrajwithParameterandCondition(shapeDf, figsize=(10,5), parameter='angle')
         if plotsave:
             fig1.savefig(getTrajFigName("walking_trajectory_shape_space",saveDir,uvrDat.metadata))
+            fig0.savefig(getTrajFigName("transformed_cumulative_pathlength",
+                                    saveDir,uvrDat.metadata))
 
     return shapeDf
 
@@ -103,8 +106,14 @@ def tortuosityGlo(x, y, ds):
     return pathC(ds)/pathL(x,y)
 
 #get local tortuosity
-def tortuosityLoc(shapeDf, window=500, plot = False, plotsave=False, saveDir=None, uvrDat=None):
+def tortuosityLoc(shapeDf, window=None, window_cm = 5 #in cm
+                  , plot = False, plotsave=False, saveDir=None, uvrDat=None):
+    
     df = shapeDf.copy()
+    
+    #decimeter value overrides cm values
+    if window is None: window = int((window_cm/shapeDf.dc2cm)/(np.median(shapeDf['ds'])))
+    
     df['tortuosity'] = rolling_apply(tortuosityGlo, window, df['x'], df['y'], df['ds'])
 
     df = carryAttrs(df,shapeDf)
@@ -125,6 +134,7 @@ def segment(shapeDf, plot=False):
     df['curvy'] = np.log(df['tortuosity'])>thresh
 
     if plot:
+        plt.figure()
         with pd.option_context('mode.use_inf_as_na', True):
             df['tortuosity'].transform(lambda x: np.log(x)).dropna().plot.kde()
         plt.axvline(thresh,color='k')
@@ -144,7 +154,7 @@ def bimodality_coeff(shapeDf):
 
     return b
 
-def maximize_bim_coeff(shapeDf, lims = (10,1000), res = 0.5, plot = False):
+def maximize_bim_coeff(shapeDf, lims = (100,5000), res = 1.5, plot = False):
 
     windows = np.round(np.exp(np.arange(np.log(lims[0]),np.log(lims[1]),res))).astype('int')
 
@@ -174,8 +184,15 @@ def intersection(x1,x2,x3,x4,y1,y2,y3,y4):
             xs >= min(x3,x4) and xs <= max(x3,x4)):
             return xs, ys
 
-def extractVoltes(shapeDf, res=0.05, L_thresh_min = 0.1, L_thresh_max = 1):
-
+def extractVoltes(shapeDf, res_cm = 0.5, L_thresh_min_cm = 1 #in cm
+                  , L_thresh_max_cm = 10 #in cm
+                  , res = None, L_thresh_min = None, L_thresh_max = None
+                  , plot = False, plotsave=False, saveDir=None, uvrDat=None):
+    
+    #decimeter values override cm values
+    if res is None: res = res_cm/shapeDf.dc2cm
+    if L_thresh_min is None: L_thresh_min = L_thresh_min_cm/shapeDf.dc2cm
+    if L_thresh_max is None: L_thresh_max = L_thresh_max_cm/shapeDf.dc2cm
     #resolution of x only considers points spaced x distance apart on the trajectory to find intersections
 
     df = shapeDf.copy()
@@ -208,16 +225,35 @@ def extractVoltes(shapeDf, res=0.05, L_thresh_min = 0.1, L_thresh_max = 1):
     df['voltes'] = con_net
 
     df = carryAttrs(df, shapeDf)
+    
+    if plot:
+        fig, ax = viz.plotTrajwithParameterandCondition(df, figsize=(10,5),
+                                        condition=df['voltes'])
+        if plotsave:
+            fig.savefig(getTrajFigName("walking_trajectory_voltes",saveDir,uvrDat.metadata))
 
     return df
 
-def shapeToTimeBoolean(posDf,shapeDf,label):
-
+def shapeToTime(posDf,shapeDf,label,new_name=None):
+    
+    data_type = shapeDf.dtypes[label]
+    if data_type == 'bool':
+        interp_type = 'int'
+        interp_kind = 'nearest'
+        #fill = 0
+    else:
+        interp_type = data_type
+        interp_kind = 'linear'
+        #fill = float("NaN")
+    
     pDf = posDf.copy()
 
-    transform = sp.interpolate.interp1d(shapeDf['time'],shapeDf[label].astype('int'),kind="nearest",bounds_error=False,fill_value=0)
-
-    pDf[label] = transform(pDf['time']).astype('bool')
+    transform = sp.interpolate.interp1d(shapeDf['time'],shapeDf[label].astype(interp_type),kind=interp_kind,bounds_error=False,fill_value="extrapolate")
+    
+    if new_name is None:
+        pDf[label] = transform(pDf['time']).astype(data_type)
+    else:
+        pDf[new_name] = transform(pDf['time']).astype(data_type)
 
     pDf = carryAttrs(pDf, posDf)
 
@@ -228,10 +264,3 @@ def number_of_voltes(shapeDf):
 
 def volte_tortuosity_difference(shapeDf):
     return np.nanmean(np.log(shapeDf.loc[shapeDf['voltes']]['tortuosity']))-np.nanmean(np.log(shapeDf.loc[~shapeDf['voltes']]['tortuosity']))
-
-def shapeDfUpdate(shapeDf, uvrDat, saveDir, saveName):
-    savepath = sep.join([saveDir,saveName,'uvr'])
-
-    #update uvrDat
-    shapeDf.to_csv(sep.join([savepath,'shapeDf.csv']))
-    print("location:", saveDir)

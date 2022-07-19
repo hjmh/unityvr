@@ -5,6 +5,9 @@ from matplotlib import patches
 import matplotlib.pyplot as plt
 import numpy as np
 from os.path import sep, isfile, exists
+import pandas as pd
+from pandas.api.types import CategoricalDtype
+import seaborn as sns
 
 from unityvr.viz import utils
 
@@ -160,21 +163,91 @@ def plotTrajwithParameterandCondition(df, figsize, parameter='angle',
                                       mycmap = 'twilight_shifted',
                                       transform = lambda x: x,
                                       plotOriginal=True,
+                                      stitch = False,
                                       mylimvals = (0,360)
                                      ):
 
     if condition is None: condition = np.ones(np.shape(df['x']),dtype='bool')
 
     fig, axs = plt.subplots(1,2,figsize=figsize, gridspec_kw={'width_ratios':[20,1]})
-
+    
+    if stitch:
+        x_label='x_stitch'
+        y_label='y_stitch'
+    else:
+        x_label='x'
+        y_label='y'
+    
     if plotOriginal:
-        axs[0].plot(df['x']*df.dc2cm,df['y']*df.dc2cm,color=color, linewidth=0.5)
-
-    axs[0],cb = plotTraj(axs[0],df.loc[condition].x.values*df.dc2cm,
-                         df.loc[condition].y.values*df.dc2cm,
-                         df[parameter].loc[condition].transform(transform),
-                         5,"cm", mycmap, mylimvals)
-
-    plt.colorbar(cb,cax=axs[1],label=parameter)
+        axs[0].plot(df[x_label]*df.dc2cm,df[y_label]*df.dc2cm,color=color, linewidth=0.5)
+    
+    if len(df.loc[condition])>0:
+        axs[0],cb = plotTraj(axs[0],df.loc[condition,x_label].values*df.dc2cm,
+                             df.loc[condition,y_label].values*df.dc2cm,
+                             df[parameter].loc[condition].transform(transform),
+                             5,"cm", mycmap, mylimvals)
+        plt.colorbar(cb,cax=axs[1],label=parameter)
 
     return fig, axs
+
+def circ_point_dist_plotter(ax,degrees,bin_size,zero_direction,
+                            start_ang,bottom,min_ax_ang,max_ax_ang,
+                            rounds_res=1,sign=0,color='k',
+                            alpha=0.85,markersize=5,
+                            pointscale=0.15,
+                            binscale=0.27,ylim_max=2):
+    
+    a, b = np.histogram(degrees, bins=np.arange(start_ang, 360+bin_size+start_ang, bin_size))
+    centers = np.deg2rad(np.ediff1d(b)//2 + b[:-1])
+    #ax.bar(centers, a, width=np.deg2rad(bin_size), bottom=bottom, alpha = 0.5, edgecolor='gray')
+    for i in range(np.max(a)):
+        ax.plot(centers[(a-i)>0]-(np.deg2rad(bin_size*binscale)*sign),
+                bottom+(a[(a-i)>0]-i)*pointscale,'o',color=color,alpha=alpha,markersize=markersize)
+    ax.set_theta_zero_location(zero_direction)
+    ax.set_thetamin(min_ax_ang)
+    ax.set_thetamax(max_ax_ang)
+    ax.set_ylim(0,ylim_max)
+    
+def full_circular_plotter(ax, df, cond, k_min, k_max, R, muvar='mu', color='grey', sign=0, alpha=0.85, label=None, outerpoints=True):
+    
+    x = df[muvar].where(cond & (df['kappa']>k_min)).astype('float').values
+    pva = np.nanmean(np.exp(1j*np.deg2rad(x)))
+    
+    if outerpoints:
+        circ_point_dist_plotter(ax,x,10,"N",0,1,-180,180,alpha=alpha,color=color,sign=sign)
+
+    ##MODIFY HEAD LENGTH AND WIDTH IF ARROW NOT VISIBLE
+    ax.arrow(np.angle(pva), 0, 0, np.round(np.abs(pva),2), width = 0.1, lw = 0.1,
+        head_width = 0.23, head_length=0.11, color=color, label=label, zorder=1, length_includes_head=True)
+
+    #max condition only applies to lines
+    x_prime = df[muvar].where(cond & (df['kappa']<k_max)).astype('float').values*np.pi/180
+    y = df['kappa'].where(cond & (df['kappa']<k_max)).astype('float').values/R
+
+    for j,_ in enumerate(x):
+        ax.plot([0,x_prime[j]],[0,y[j]],ls='-',alpha=alpha,zorder=-1,color=color)
+        
+def linear_ordered_plotter(ax, inDf, order, variable, colormapper = None, hue_var='flyid', ylim=(-190,190)):
+    
+    pal = "tab20b_r" if (colormapper is None) else sns.color_palette(colormapper)
+    
+    df = inDf.copy()
+    
+    stims = pd.DataFrame([a + b for a, b in zip(list(order)[::2],list(order)[1::2])],columns={'s'})
+    stims['t'] = "t"+(stims.groupby('s').cumcount()+1).apply(lambda x: "{:02d}".format(x))
+    stims = CategoricalDtype(list(stims['s']+stims['t']), ordered=True)
+
+    df['stimtrial'] = df['stimtrial'].astype(stims)
+
+    sns.lineplot(x = 'stimtrial', y = variable, hue=hue_var, palette=pal, data = 
+                          df,  ax =ax);
+
+    sns.stripplot(x = 'stimtrial', y = variable, hue=hue_var, palette=pal, data = 
+                          df,  ax =ax, jitter=False, label=str());
+    ax.set_ylim(ylim)
+    
+    N = len(df[hue_var].unique())
+    handles, labels = ax.get_legend_handles_labels()
+    ax.legend(handles[:N],labels[:N],bbox_to_anchor=(1.2, 1.2))
+    sns.despine()
+    

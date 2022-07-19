@@ -67,6 +67,31 @@ def combineImagingAndPosDf(imgDat, posDf, volFramePos):
         expDf['vR'] = posDf.vR.values[volFramePos]
         expDf['vTfilt'] = posDf.vT_filt.values[volFramePos]
         expDf['vRfilt'] = posDf.vR_filt.values[volFramePos]
+    try:
+        expDf['s'] = posDf.s.values[volFramePos]
+        expDf['ds'] = np.diff(expDf.s.values,prepend=0)
+        expDf['dx'] = np.diff(expDf.x.values,prepend=0)
+        expDf['dy'] = np.diff(expDf.y.values,prepend=0)
+    except AttributeError:
+        print("posDf has not been processed.")
+    try:
+        expDf['tortuosity'] = posDf.tortuosity.values[volFramePos]
+        expDf['curvy'] = posDf.curvy.values[volFramePos]
+        expDf['voltes'] = posDf.voltes.values[volFramePos]
+        expDf['x_stitch'] = posDf.x_stitch.values[volFramePos]
+        expDf['y_stitch'] = posDf.y_stitch.values[volFramePos]
+    except AttributeError:
+        print("posDf did not contain tortuosity, curvature, voltes or stitched positions")
+    try:
+        expDf['flight'] = posDf.flight.values[volFramePos]
+    except AttributeError:
+        expDf['flight'] = np.zeros(np.shape(expDf['x']))
+        print("posDf did not contain flight")
+    try:
+        expDf['clipped'] = posDf.clipped.values[volFramePos]
+    except AttributeError:
+        expDf['clipped'] = np.zeros(np.shape(expDf['x']))
+        print("posDf did not contain clipped")
     return expDf
 
 
