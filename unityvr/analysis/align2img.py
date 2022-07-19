@@ -1,12 +1,12 @@
 # Functions for aligning imaging and VR data
 import numpy as np
 import matplotlib.pyplot as plt
-from unityvr.viz import utils
+from unityvr.viz import utils as vutils
 import pandas as pd
 from os.path import sep
 import json
 from unityvr.preproc import logproc
-from unityvr.analysis import utils
+from unityvr.analysis import utils as autils
 
 def findImgFrameTimes(uvrDat,imgMetadat):
 
@@ -31,7 +31,7 @@ def debugAlignmentPlots(uvrDat,imgMetadat, imgInd, volFramePos):
              uvrDat.nidDf.imgfsig[imgInd], 'r.')
     axs[0].set_xlim(1000,1200)
     axs[0].set_title('Sanity check 1:\nCheck if frame starts are detected correctly')
-    utils.myAxisTheme(axs[0])
+    vutils.myAxisTheme(axs[0])
 
     # sanity check to see if time values align
     axs[1].plot(uvrDat.posDf.time.values[volFramePos],
@@ -41,7 +41,7 @@ def debugAlignmentPlots(uvrDat,imgMetadat, imgInd, volFramePos):
     axs[1].set_xlim(0,round(uvrDat.posDf.time.values[volFramePos][-1])+1)
     axs[1].set_ylim(0,round(uvrDat.nidDf.timeinterp.values[imgInd[0::imgMetadat['fpv']]].astype('int')[-1])+1)
     axs[1].set_title('Sanity check 2:\nCheck that time values align well')
-    utils.myAxisTheme(axs[1])
+    vutils.myAxisTheme(axs[1])
 
 
 # generate combined DataFrame
@@ -101,7 +101,7 @@ def loadAndAlignPreprocessedData(root, subdir, flies, conditions, trials, panDef
                     expDf['angleBrightAligned'] = np.mod(expDf['angle'].values-0*180/np.pi,360)
                 else:
                     expDf['angleBrightAligned'] = np.mod(expDf['angle'].values-panDefs.panOrigin[panDefs.getPanID(cond)]*180/np.pi,360)
-                    xr, yr = utils.rotatepath(expDf.x.values,expDf.y.values, -panDefs.panOrigin[panDefs.getPanID(cond)])
+                    xr, yr = autils.rotatepath(expDf.x.values,expDf.y.values, -panDefs.panOrigin[panDefs.getPanID(cond)])
                     expDf.x = xr
                     expDf.y = yr
                 #expDf['flightmask'] = np.logical_and(expDf.vTfilt.values < maxVt, expDf.vTfilt.values > minVt)
