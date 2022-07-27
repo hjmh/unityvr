@@ -22,8 +22,14 @@ def getTrajFigName(figurename,saveDir,metadata):
                                       metadata['trial']+'.pdf'])
     return name
 
-
+# trajectory and analysis utils
 def rotatepath(x,y,a):
     xr = np.cos(a)*x - np.sin(a)*y
     yr = np.sin(a)*x + np.cos(a)*y
     return xr, yr
+
+
+def getClutterDf(objectDf, searchstr = 'default', renameClutterObjects = True):
+    clutterDf = objectDf.query('name.str.contains(@searchstr)').reset_index(drop=True)
+    if renameClutterObjects: clutterDf['name'] = clutterDf['name'].apply(lambda x: x.split('/')[1])
+    return clutterDf
