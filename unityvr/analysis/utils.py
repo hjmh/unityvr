@@ -1,5 +1,6 @@
 import pandas as pd
 from os.path import sep, join
+import numpy as np
 
 ##generic utility functions
 
@@ -20,3 +21,9 @@ def getTrajFigName(figurename,saveDir,metadata):
                                       metadata['expid'].split('_')[-1],
                                       metadata['trial']+'.pdf'])
     return name
+
+
+def rotatepath(x,y,a):
+    xr = np.cos(a)*x - np.sin(a)*y
+    yr = np.sin(a)*x + np.cos(a)*y
+    return xr, yr

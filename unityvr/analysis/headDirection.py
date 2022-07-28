@@ -5,6 +5,7 @@ import warnings
 import pandas as pd
 from scipy.stats import circmean
 
+
 # Functions related to characterizing bump position .......................................
 ## Circular calculation utilities
 def circDistAbs(angle1,angle2):
@@ -32,18 +33,6 @@ def computeVectorPVA(angle, weights):
 
     pvaLen = np.hypot(pva[0],pva[1])
     return pva, pvaLen
-
-def computeVectorPVA(angle, weights):
-    """ Compute population vector average of angles
-    """
-    pva_x = np.cos(angle)*weights
-    pva_y = np.sin(angle)*weights
-
-    pva = np.vstack((sum(pva_x)/len(pva_x), sum(pva_y)/len(pva_x)))
-
-    pvaLen = np.hypot(pva[0],pva[1])
-    return pva, pvaLen
-
 
 ## Description of the (EB) bump related functions
 def getRoiNum(df, roiname = 'slice'):
@@ -353,7 +342,7 @@ def makeOffsetStatsDf(offsetTimeSeries, maxOffsetN, flies, conditions, condnames
 # Calcium traces vizualization .................................................
 # Some ROI visualizations .......................................
 
-def plotDFFheatmap(ax, df, roiname='slice', addColorbar=True,lefthanded=False):
+def plotDFFheatmap(ax, df, roiname='slice', lefthanded=False):
     """
     Plot heatmap-style visualization of calcium imaging roi time series.
     We assume that calcium imaging rois are sorted in a left-handed rotational reference frame
@@ -370,10 +359,9 @@ def plotDFFheatmap(ax, df, roiname='slice', addColorbar=True,lefthanded=False):
     ax.set_ylabel('\nROIs (n = {0})'.format(df[roinames].values.shape[1]))
 
     ax.set_ylim(-0.5,nroi-0.5)
-
-    if addColorbar:
-        # Add colorbar, make sure to specify tick locations to match desired ticklabels
-        cbar = fig.colorbar(cax)
-        cbar.set_label('$(F - F_0) / F_0$ (per ROI)')  # vertically oriented colorbar
-
     return ax, cax
+
+def addDFFColorbar(fig, cax, ax):
+    # Add colorbar, make sure to specify tick locations to match desired ticklabels
+    cbar = fig.colorbar(cax, ax=ax)
+    cbar.set_label('$(F - F_0) / F_0$ (per ROI)')  # vertically oriented colorbar
