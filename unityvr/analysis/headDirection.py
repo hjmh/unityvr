@@ -286,6 +286,7 @@ def makeOffsetDf(time, xpos, ypos,angle, offsetArray,offsetreg,mainoffsetid, mai
     offsettsdf['time'] = time
     offsettsdf['xpos'] = xpos
     offsettsdf['ypos'] = ypos
+    offsettsdf['angle'] = angle
     offsettsdf['fly'] = fly
     offsettsdf['condition'] = condition
     offsettsdf['condname'] = condname
