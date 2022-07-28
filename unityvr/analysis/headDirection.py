@@ -271,7 +271,7 @@ def findMainOffset(offsetArray,maxOffsetN):
     return mainoffsetid, mainoffsetval, mainoffsetdff
 
 
-def makeOffsetDf(time, xpos, ypos, offsetArray,offsetreg,mainoffsetid, mainoffsetval, mainoffsetdff,fly,condition, condname, trial):
+def makeOffsetDf(time, xpos, ypos,angle, offsetArray,offsetreg,mainoffsetid, mainoffsetval, mainoffsetdff,fly,condition, condname, trial):
     # check how much each offset was used and order accordingly
     percentT = np.sum((~np.isnan(offsetArray[:,0,:])).astype('int'), axis=0)/len(offsetArray[:,0,0])*100
     importanceOrder = percentT.argsort()[::-1]
