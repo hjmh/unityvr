@@ -369,12 +369,15 @@ def relativeToLandmark(expDf,clutterDf):
 
     #landmark identity
     closest = np.array(lm_x,dtype='object')
+    distance = np.array(lm_x,dtype='object')
 
     for i in range(len(closest)):
-        cDf['dist'] = np.sqrt((cDf['px'].values-x[i])**2 + (cDf['py'].values-y[i])**2)
+        cDf['dist'] = np.hypot(abs(cDf['px'].values-x[i]), abs(cDf['py'].values-y[i]))
         loc = cDf.dist.idxmin()
+        distance[i] = cDf.loc[loc,'dist']
         closest[i] = cDf.loc[loc,'name']
-        lm_x[i],lm_y[i] = np.unique(cDf.loc[loc,['px','py']])
+        lm_x[i] = cDf.loc[loc,'px']
+        lm_y[i] = cDf.loc[loc,'py']
 
     #complex vector
     vec = (lm_x-x) + 1j*(lm_y-y)
@@ -383,7 +386,9 @@ def relativeToLandmark(expDf,clutterDf):
     expDf['rel_angle'] = ((expDf['angle']-((np.angle(
         vec)*180/np.pi)%360))+180)%360-180
     #angle between -180 and 180
-    expDf['lm_x'] = lm_x*10; expDf['lm_y'] = lm_y*10
+    expDf['lm_x'] = lm_x
+    expDf['lm_y'] = lm_y
     expDf['closest'] = closest
+    expDf['distance'] = distance
 
     return expDf
