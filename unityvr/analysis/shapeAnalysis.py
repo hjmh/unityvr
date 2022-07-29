@@ -112,7 +112,7 @@ def tortuosityLoc(shapeDf, window=None, window_cm = 5 #in cm
     df = shapeDf.copy()
     
     #decimeter value overrides cm values
-    if window is None: window = int((window_cm/shapeDf.dc2cm)/(np.median(shapeDf['ds'])))
+    if window is None: window = window_cm_to_int(shapeDf, window_cm)
     
     df['tortuosity'] = rolling_apply(tortuosityGlo, window, df['x'], df['y'], df['ds'])
 
@@ -125,6 +125,13 @@ def tortuosityLoc(shapeDf, window=None, window_cm = 5 #in cm
             fig.savefig(getTrajFigName("walking_trajectory_tortuosity",saveDir,uvrDat.metadata))
 
     return df
+
+#window in integer length
+def window_cm_to_int(shapeDf, window_cm):
+    return int((window_cm/shapeDf.dc2cm)/(np.median(shapeDf['ds'])))
+
+def window_s_to_int(timeDf, window_s):
+    return int(window_s/(np.mean(np.diff(timeDf['time']))))
 
 def segment(shapeDf, plot=False):
 
