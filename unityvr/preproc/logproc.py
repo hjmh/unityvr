@@ -94,26 +94,26 @@ def loadUVRData(savepath):
     posDf = pd.read_csv(sep.join([savepath,'posDf.csv'])).drop(columns=['Unnamed: 0'])
     ftDf = pd.read_csv(sep.join([savepath,'ftDf.csv'])).drop(columns=['Unnamed: 0'])
     nidDf = pd.read_csv(sep.join([savepath,'nidDf.csv'])).drop(columns=['Unnamed: 0'])
-    
+
 
     try:
         texDf = pd.read_csv(sep.join([savepath,'texDf.csv'])).drop(columns=['Unnamed: 0'])
     except FileNotFoundError:
         texDf = pd.DataFrame()
         #No texture mapping time series was recorded with this experiment, fill with empty DataFrame
-        
-    try: 
+
+    try:
         shapeDf = pd.read_csv(sep.join([savepath,'shapeDf.csv'])).drop(columns=['Unnamed: 0'])
     except FileNotFoundError:
         shapeDf = pd.DataFrame()
         #Shape dataframe was not computed. Fill with empty DataFrame
-        
-    try: 
+
+    try:
         timeDf = pd.read_csv(sep.join([savepath,'timeDf.csv'])).drop(columns=['Unnamed: 0'])
     except FileNotFoundError:
         timeDf = pd.DataFrame()
         #Shape dataframe was not computed. Fill with empty DataFrame
-        
+
     uvrexperiment = unityVRexperiment(metadata=metadat,posDf=posDf,ftDf=ftDf,nidDf=nidDf,objDf=objDf,texDf=texDf,shapeDf=shapeDf,timeDf=timeDf)
 
     return uvrexperiment
@@ -329,13 +329,12 @@ def timeseriesDfFromLog(dat):
         nidDf = pd.merge(dtDf, pdDf, on="frame", how='outer').rename(columns={'time_x':'time'}).drop(['time_y'],axis=1)
 
         nidDf["pdFilt"]  = nidDf.pdsig.values
-        nidDf.pdFilt[np.isfinite(nidDf.pdsig)] = medfilt(nidDf.pdsig[np.isfinite(nidDf.pdsig)])
+        nidDf.pdFilt.values[np.isfinite(nidDf.pdsig.values)] = medfilt(nidDf.pdsig.values[np.isfinite(nidDf.pdsig.values)])
         nidDf["pdThresh"]  = 1*(np.asarray(nidDf.pdFilt>=np.nanmedian(nidDf.pdFilt.values)))
 
         nidDf["imgfFilt"]  = nidDf.imgfsig.values
-        nidDf.imgfFilt[np.isfinite(nidDf.imgfsig)] = medfilt(nidDf.imgfsig[np.isfinite(nidDf.imgfsig)])
-        # replace with .loc[:, ...]
-        nidDf["imgfThresh"]  = 1*(np.asarray(nidDf.imgfFilt>=np.nanmedian(nidDf.imgfFilt.values)))
+        nidDf.imgfFilt.values[np.isfinite(nidDf.imgfsig.values)] = medfilt(nidDf.imgfsig.values[np.isfinite(nidDf.imgfsig.values)])
+        nidDf["imgfThresh"]  = 1*(np.asarray(nidDf.imgfFilt.values>=np.nanmedian(nidDf.imgfFilt.values)))
 
         nidDf = generateInterTime(nidDf)
     else:
