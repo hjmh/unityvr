@@ -365,3 +365,36 @@ def addDFFColorbar(fig, cax, ax):
     # Add colorbar, make sure to specify tick locations to match desired ticklabels
     cbar = fig.colorbar(cax, ax=ax)
     cbar.set_label('$(F - F_0) / F_0$ (per ROI)')  # vertically oriented colorbar
+
+
+def relativeToLandmark(expDf,clutterDf):
+    # Find closest landmark, compute heading relative to it
+    
+    cDf = clutterDf.copy()
+    
+    #fly positions
+    x = expDf['x'].values
+    y = expDf['y'].values
+    
+    #landmark position
+    lm_x = np.zeros(len(expDf)); lm_y = np.zeros(len(expDf))
+    
+    #landmark identity
+    closest = np.array(lm_x,dtype='object')
+    
+    for i in range(len(closest)):
+        cDf['dist'] = np.sqrt((cDf['px'].values-x[i])**2 + (cDf['py'].values-y[i])**2)
+        loc = cDf.dist.idxmin()
+        closest[i] = cDf.loc[loc,'name']
+        lm_x[i],lm_y[i] = np.unique(cDf.loc[loc,['px','py']])
+    
+    #complex vector
+    vec = (lm_x-x) + 1j*(lm_y-y)
+    
+    #derive relative angle
+    expDf['rel_angle'] = ((expDf['angle']-((np.angle(
+        vec)*180/np.pi)%360))+180)%360-180
+    #angle between -180 and 180
+    expDf['lm_x'] = lm_x*10; expDf['lm_y'] = lm_y*10
+    expDf['closest'] = closest
+    return expDf

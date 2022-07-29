@@ -10,6 +10,7 @@ from pandas.api.types import CategoricalDtype
 import seaborn as sns
 
 from unityvr.viz import utils
+from unityvr.analysis.utils import getClutterDf 
 
 # general purpose
 def stripplotWithLines(df, valvar, groupvar,huevar, axs, xlab, ylab, ylimvals,
@@ -118,20 +119,21 @@ def plotVRpathWithObjects(uvrExperiment,limx,limy, myfigsize):
     return fig, ax
 
 def plotAllObjects(uvrExperiment, ax, labelobj=False, objsize=(-1,-1)):
-
-    for obj in range(uvrExperiment.objDf.shape[0]):
-        if("Plane" in uvrExperiment.objDf.name[obj]): continue
-
-        if("FlyCamera" not in uvrExperiment.objDf.name[obj]):
+    
+    clutterDf = getClutterDf(uvrExperiment.objDf,"Clutter")
+    
+    for obj in clutterDf.index:
             if objsize[0] < 0:
                 ax = plotObjectEllipse(ax,
-                                   [uvrExperiment.objDf['sx'][obj], uvrExperiment.objDf['sy'][obj]],
-                                   [uvrExperiment.objDf['px'][obj], uvrExperiment.objDf['py'][obj]])
+                                   [clutterDf['sx'][obj], clutterDf['sy'][obj]],
+                                   [clutterDf['px'][obj], clutterDf['py'][obj]])
+                
             else:
                 ax = plotObjectEllipse(ax, objsize,
-                                      [uvrExperiment.objDf['px'][obj], uvrExperiment.objDf['py'][obj]])
+                                      [clutterDf['px'][obj], clutterDf['py'][obj]])
             if labelobj:
-                ax.annotate(uvrExperiment.objDf['name'][obj], (uvrExperiment.objDf['px'][obj]+5, uvrExperiment.objDf['py'][obj]-10))
+                length_scale = np.mean(np.diff(clutterDf['px']))
+                ax.annotate(clutterDf['name'].apply(lambda x: x.split('_')[-1])[obj], (clutterDf['px'][obj]+length_scale, clutterDf['py'][obj]-length_scale))
     return ax
 
 
@@ -164,8 +166,14 @@ def plotTrajwithParameterandCondition(df, figsize, parameter='angle',
                                       transform = lambda x: x,
                                       plotOriginal=True,
                                       stitch = False,
-                                      mylimvals = (0,360)
+                                      mylimvals = (0,360),
+                                      dc2cm = 10
                                      ):
+    
+    #if conversion is not specified, use default conversion
+    if ~hasattr(df,'dc2cm'): 
+        df.dc2cm = dc2cm
+        print("dc2cm:",dc2cm)
 
     if condition is None: condition = np.ones(np.shape(df['x']),dtype='bool')
 
