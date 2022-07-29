@@ -89,6 +89,7 @@ def shiftPVA(pva,offset):
 
 
 # Offset calculation ...........................................................
+
 def findDFFPeaks(dff,radpos,dffth,minwidth=2):
     from scipy.signal import find_peaks
 
@@ -99,12 +100,6 @@ def findDFFPeaks(dff,radpos,dffth,minwidth=2):
     peaks = peaks[dff[peaks]>dffth]
     peaksfilt = peaks[radpos[peaks]>-np.pi]
     peaksfilt = peaks[radpos[peaks]<=np.pi]
-
-    #filter out peaks that are close in circular distance
-    #peaksfilt = np.sort(peaksfilt)
-    #if len(peaksfilt) > 1:
-    #    if circDistAbs(radpos[peaksfilt][0],radpos[peaksfilt][-1]) < np.pi/8:
-    #        peaksfilt = peaksfilt[:-1]
 
     return peaks, peaksfilt
 
@@ -310,16 +305,9 @@ def makeOffsetStatsDf(offsetTimeSeries, maxOffsetN, flies, conditions, condnames
                 if len(df) == 0:
                     continue
 
-                #fps = len(df.time.values)/df.time.values[-1]
-                #windowsize = int(1*fps)
-                #oldoffset = (df.oldoffset + np.pi).rolling(windowsize,center=True).apply(circmean) - np.pi
-                #mainoffset= (df.mainoffset + np.pi).rolling(windowsize,center=True).apply(circmean) - np.pi
-
                 oldoffset = np.asarray(list(df.oldoffset.values))
                 mainoffset = np.asarray(list(df.mainoffset.values))
 
-                #offsetPvaold, offsetPvaLenold = computeVectorPVA(oldoffset+np.pi, np.ones(len(oldoffset)))
-                #offsetPva, offsetPvaLen = computeVectorPVA(mainoffset[~np.isnan(mainoffset)]+np.pi, np.ones(len(mainoffset[~np.isnan(mainoffset)])))
                 statsdf=pd.DataFrame({'pvaoffset_circmean':[circmean(oldoffset[~np.isnan(oldoffset)],high=np.pi, low=-np.pi)],
                                       'pvaoffset_circvar': [circvar(oldoffset[~np.isnan(oldoffset)])],
                                       'mainoffset_circmean': [circmean(mainoffset[~np.isnan(mainoffset)],high=np.pi, low=-np.pi)],
@@ -327,7 +315,6 @@ def makeOffsetStatsDf(offsetTimeSeries, maxOffsetN, flies, conditions, condnames
                 for o in range(maxOffsetN):
                     mo = np.asarray(list(df['offset{}'.format(o+1)].values))
                     if np.isnan(mo).sum() == len(mo): continue
-                    #offsetPva, offsetPvaLen = computeVectorPVA(mo[~np.isnan(mo)]+np.pi, np.ones(len(mo[~np.isnan(mo)])))
                     statsdf['offset{}_circmean'.format(o+1)] = [circmean(mo[~np.isnan(mo)],high=np.pi, low=-np.pi)]
                     statsdf['offset{}_circvar'.format(o+1)] = circvar(mo[~np.isnan(mo)])
                     statsdf['offset{}_percenttime'.format(o+1)] = np.sum((~np.isnan(mo)).astype('int'), axis=0)/len(mo)*100
@@ -341,8 +328,7 @@ def makeOffsetStatsDf(offsetTimeSeries, maxOffsetN, flies, conditions, condnames
     return offsetStatsFull
 
 # Calcium traces vizualization .................................................
-# Some ROI visualizations .......................................
-
+# Some ROI visualizations
 def plotDFFheatmap(ax, df, roiname='slice', lefthanded=False):
     """
     Plot heatmap-style visualization of calcium imaging roi time series.
@@ -362,6 +348,7 @@ def plotDFFheatmap(ax, df, roiname='slice', lefthanded=False):
     ax.set_ylim(-0.5,nroi-0.5)
     return ax, cax
 
+
 def addDFFColorbar(fig, cax, ax):
     # Add colorbar, make sure to specify tick locations to match desired ticklabels
     cbar = fig.colorbar(cax, ax=ax)
@@ -370,32 +357,33 @@ def addDFFColorbar(fig, cax, ax):
 
 def relativeToLandmark(expDf,clutterDf):
     # Find closest landmark, compute heading relative to it
-    
+
     cDf = clutterDf.copy()
-    
+
     #fly positions
     x = expDf['x'].values
     y = expDf['y'].values
-    
+
     #landmark position
     lm_x = np.zeros(len(expDf)); lm_y = np.zeros(len(expDf))
-    
+
     #landmark identity
     closest = np.array(lm_x,dtype='object')
-    
+
     for i in range(len(closest)):
         cDf['dist'] = np.sqrt((cDf['px'].values-x[i])**2 + (cDf['py'].values-y[i])**2)
         loc = cDf.dist.idxmin()
         closest[i] = cDf.loc[loc,'name']
         lm_x[i],lm_y[i] = np.unique(cDf.loc[loc,['px','py']])
-    
+
     #complex vector
     vec = (lm_x-x) + 1j*(lm_y-y)
-    
+
     #derive relative angle
     expDf['rel_angle'] = ((expDf['angle']-((np.angle(
         vec)*180/np.pi)%360))+180)%360-180
     #angle between -180 and 180
     expDf['lm_x'] = lm_x*10; expDf['lm_y'] = lm_y*10
     expDf['closest'] = closest
+
     return expDf
