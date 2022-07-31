@@ -355,14 +355,14 @@ def addDFFColorbar(fig, cax, ax):
     cbar.set_label('$(F - F_0) / F_0$ (per ROI)')  # vertically oriented colorbar
 
 
-def relativeToLandmark(expDf,clutterDf):
+def relativeToLandmark(expDf,clutterDf, xynames = ('x','y')):
     # Find closest landmark, compute heading relative to it
 
     cDf = clutterDf.copy()
 
     #fly positions
-    x = expDf['x'].values
-    y = expDf['y'].values
+    x = expDf[xynames[0]].values
+    y = expDf[xynames[1]].values
 
     #landmark position
     lm_x = np.zeros(len(expDf)); lm_y = np.zeros(len(expDf))
