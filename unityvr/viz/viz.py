@@ -14,15 +14,16 @@ from unityvr.analysis.utils import getClutterDf
 
 # general purpose
 def stripplotWithLines(df, valvar, groupvar,huevar, axs, xlab, ylab, ylimvals,
-                       filtering=False, filterval=0, filtervar='None', normalize=False, normgroup='None', palette='tab20b_r', order='None'):
+                       filtering=False, filterval=0, filtervar='None', normalize=False, normgroup='None', palette='tab20b_r', order='None', singlecolor=False):
     import matplotlib.colors as colors
 
     samples = list(np.unique(df[huevar].values))
     groups = list(np.unique(df[groupvar].values))
 
     # generate color map
-    cNorm  = colors.Normalize(vmin=1, vmax=len(samples))
-    myCMap = plt.cm.ScalarMappable(norm=cNorm,cmap=palette)
+    if not singlecolor:
+        cNorm  = colors.Normalize(vmin=1, vmax=len(samples))
+        myCMap = plt.cm.ScalarMappable(norm=cNorm,cmap=palette)
 
     for s, sample in enumerate(samples):
         sampledf = df.query('{}=="{}"'.format(huevar,sample))
@@ -47,11 +48,19 @@ def stripplotWithLines(df, valvar, groupvar,huevar, axs, xlab, ylab, ylimvals,
         if order != 'None':
             groupnames = [groupnames[i] for i in order]
             toplot = [toplot[i] for i in order]
-            axs.plot(np.arange(len(groups))+jitter, toplot,'o', color=myCMap.to_rgba(s+1), label=sample)
-            axs.plot(np.arange(len(groups))+jitter, toplot,'-', color=myCMap.to_rgba(s+1))
+            if singlecolor:
+                axs.plot(np.arange(len(groups))+jitter, toplot,'o', color=palette, markeredgecolor='w', label=sample)
+                axs.plot(np.arange(len(groups))+jitter, toplot,'-', color=palette)
+            else:
+                axs.plot(np.arange(len(groups))+jitter, toplot,'o', color=myCMap.to_rgba(s+1), label=sample)
+                axs.plot(np.arange(len(groups))+jitter, toplot,'-', color=myCMap.to_rgba(s+1))
         else:
-            axs.plot(np.arange(len(groups))+jitter, toplot,'o', color=myCMap.to_rgba(s+1), label=sample)
-            axs.plot(np.arange(len(groups))+jitter, toplot,'-', color=myCMap.to_rgba(s+1))
+            if singlecolor:
+                axs.plot(np.arange(len(groups))+jitter, toplot,'o', color=palette, markeredgecolor='w', label=sample)
+                axs.plot(np.arange(len(groups))+jitter, toplot,'-', color=palette)
+            else:
+                axs.plot(np.arange(len(groups))+jitter, toplot,'o', color=myCMap.to_rgba(s+1), label=sample)
+                axs.plot(np.arange(len(groups))+jitter, toplot,'-', color=myCMap.to_rgba(s+1))
 
 
     # beautification
