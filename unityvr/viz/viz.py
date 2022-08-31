@@ -31,11 +31,6 @@ def stripplotWithLines(df, valvar, groupvar,huevar, axs, xlab, ylab, ylimvals,
         toplot = sampledf[valvar].values
         groupnames = sampledf[groupvar].values
 
-        #mask mean position where offset PVA length was low
-        if filtering:
-            filtervariable = sampledf[filtervar].values
-            toplot[filtervariable>filterval] = np.nan
-
         #noramlize if desired
         if normalize:
             toplot = toplot - toplot[normgroup]
@@ -43,6 +38,11 @@ def stripplotWithLines(df, valvar, groupvar,huevar, axs, xlab, ylab, ylimvals,
                 toplot[toplot>np.pi] = toplot[toplot>np.pi] - 2*np.pi
                 toplot[toplot<-np.pi] = toplot[toplot<-np.pi] + 2*np.pi
 
+        #mask mean position where offset PVA length was low
+        if filtering:
+            filtervariable = sampledf[filtervar].values
+            toplot[filtervariable>filterval] = np.nan
+            
         jitter = np.random.uniform(low=-0.1,high=0.1, size=len(groups))
 
         if order != 'None':
