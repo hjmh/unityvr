@@ -120,10 +120,8 @@ def loadAndAlignPreprocessedData(root, subdir, flies, conditions, trials, panDef
                     uvrMetadat = json.load(json_file)
 
                 prerotation = 0
-                try:
-                    prerotation = uvrMetadat["rotated_by"]
-                except:
-                    pass
+                try: prerotation = uvrMetadat["rotated_by"]*np.pi/180
+                except: pass
 
                 uvrDat = logproc.loadUVRData(sep.join([preprocDir, vr]))
                 posDf = uvrDat.posDf
