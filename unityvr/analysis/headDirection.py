@@ -374,10 +374,15 @@ def relativeToLandmark(expDf,clutterDf, xynames = ('x','y')):
     for i in range(len(closest)):
         cDf['dist'] = np.hypot(abs(cDf['px'].values-x[i]), abs(cDf['py'].values-y[i]))
         loc = cDf.dist.idxmin()
-        distance[i] = cDf.loc[loc,'dist']
-        closest[i] = cDf.loc[loc,'name']
-        lm_x[i] = cDf.loc[loc,'px']
-        lm_y[i] = cDf.loc[loc,'py']
+        try:
+            distance[i] = cDf.loc[loc,'dist']
+            closest[i] = cDf.loc[loc,'name']
+            lm_x[i] = cDf.loc[loc,'px']
+            lm_y[i] = cDf.loc[loc,'py']
+        except KeyError:
+            closest[i] = np.nan
+            lm_x[i] = np.nan
+            lm_y[i] = np.nan
 
     #complex vector
     vec = (lm_x-x) + 1j*(lm_y-y)
