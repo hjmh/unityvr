@@ -91,7 +91,8 @@ def loadUVRData(savepath):
     with open(sep.join([savepath,'metadata.json'])) as json_file:
         metadat = json.load(json_file)
     objDf = pd.read_csv(sep.join([savepath,'objDf.csv'])).drop(columns=['Unnamed: 0'])
-    posDf = pd.read_csv(sep.join([savepath,'posDf.csv'])).drop(columns=['Unnamed: 0'])
+    # ToDo remove when Shivam has removed fixation values from posDf
+    posDf = pd.read_csv(sep.join([savepath,'posDf.csv']),dtype={'fixation': 'string'}).drop(columns=['Unnamed: 0','fixation'],errors='ignore')
     ftDf = pd.read_csv(sep.join([savepath,'ftDf.csv'])).drop(columns=['Unnamed: 0'])
     nidDf = pd.read_csv(sep.join([savepath,'nidDf.csv'])).drop(columns=['Unnamed: 0'])
 
