@@ -279,10 +279,16 @@ def texDfFromLog(dat):
 
     entries = [None]*len(matching)
     for entry, match in enumerate(matching):
-        framedat = {'frame': match['frame'],
-                    'time': match['timeSecs'],
-                    'xtex': match['xpos'],
-                    'ytex': match['ypos']}
+        if 'ypos' in match:
+            framedat = {'frame': match['frame'],
+                        'time': match['timeSecs'],
+                        'xtex': match['xpos'],
+                        'ytex': match['ypos']}
+        else:
+            framedat = {'frame': match['frame'],
+                        'time': match['timeSecs'],
+                        'xtex': match['xpos'],
+                        'ytex': 0}
         entries[entry] = pd.Series(framedat).to_frame().T
 
     texDf = pd.concat(entries,ignore_index = True)
