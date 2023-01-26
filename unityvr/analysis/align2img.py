@@ -49,8 +49,9 @@ def combineImagingAndPosDf(imgDat, posDf, volFramePos):
     expDf = imgDat.copy()
     lendiff = len(expDf) - len(posDf.x.values[volFramePos])
     if lendiff != 0:
-        print('Truncated fictrac recording.')
-        expDf = expDf[:-lendiff]
+        print(f'Truncated fictrac recording. Difference in length: {lendiff}')
+        if lendiff > 0: expDf = expDf[:-lendiff]
+        elif lendiff < 0: volFramePos = volFramePos[:lendiff]
     expDf['posTime'] = posDf.time.values[volFramePos]
     expDf['x'] = posDf.x.values[volFramePos]
     expDf['y'] = posDf.y.values[volFramePos]
