@@ -222,10 +222,12 @@ def posDfFromLog(dat):
                         'dyattempt': match['attemptedTranslation']['z']
                        }
         entries[entry] = pd.Series(framedat).to_frame().T
-    posDf = pd.concat(entries,ignore_index = True)
     print('correcting for Unity angle convention.')
 
-    return posDf
+    if len(entries) > 0:
+        return  pd.concat(entries,ignore_index = True)
+    else:
+        return pd.DataFrame()
 
 
 def ftDfFromLog(dat):
@@ -242,11 +244,9 @@ def ftDfFromLog(dat):
         entries[entry] = pd.Series(framedat).to_frame().T
 
     if len(entries) > 0:
-        ftDf = pd.concat(entries, ignore_index = True)
+        return pd.concat(entries, ignore_index = True)
     else:
-        ftDf = pd.DataFrame()
-
-    return ftDf
+        return pd.DataFrame()
 
 def dtDfFromLog(dat):
     # get delta time info
@@ -257,9 +257,11 @@ def dtDfFromLog(dat):
                     'time': match['timeSecs'],
                     'dt': match['deltaTime']}
         entries[entry] = pd.Series(framedat).to_frame().T
-    dtDf = pd.concat(entries,ignore_index = True)
 
-    return dtDf
+    if len(entries) > 0:
+        return pd.concat(entries,ignore_index = True)
+    else:
+        return pd.DataFrame()
 
 
 def pdDfFromLog(dat):
@@ -273,9 +275,10 @@ def pdDfFromLog(dat):
                     'imgfsig': match['imgFrameTrigger']}
         entries[entry] = pd.Series(framedat).to_frame().T
 
-    pdDf = pd.concat(entries,ignore_index = True)
-
-    return pdDf
+    if len(entries) > 0:
+        return pd.concat(entries,ignore_index = True)
+    else:
+        return pd.DataFrame()
 
 def texDfFromLog(dat):
     # get texture remapping log
@@ -296,11 +299,13 @@ def texDfFromLog(dat):
                         'ytex': 0}
         entries[entry] = pd.Series(framedat).to_frame().T
 
-    texDf = pd.concat(entries,ignore_index = True)
-
-    texDf.time = texDf.time-texDf.time[0]
-
-    return texDf
+    if len(entries) > 0:
+        texDf = pd.concat(entries,ignore_index = True)
+        texDf.time = texDf.time-texDf.time[0]
+        return texDf
+    else:
+        return pd.DataFrame()
+    
 
 def ftTrajDfFromLog(directory, filename):
     cols = [14,15,16,17,18]
