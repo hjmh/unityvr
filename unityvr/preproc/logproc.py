@@ -139,7 +139,11 @@ def makeMetaDict(dat, fileName):
     [datestr, timestr] = fileName.split('.')[0].split('_')[1:3]
 
     matching = [s for s in dat if "ficTracBallRadius" in s]
-    ballRad = matching[0]["ficTracBallRadius"]
+    if len(matching) == 0:
+        print('no fictract metadata')
+        ballRad = 0.0
+    else:
+        ballRad = matching[0]["ficTracBallRadius"]
 
     matching = [s for s in dat if "refreshRateHz" in s]
     setFrameRate = matching[0]["refreshRateHz"]
