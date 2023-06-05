@@ -329,8 +329,8 @@ def timeseriesDfFromLog(dat):
     except:
         print("No analog input data was recorded.")
 
-    posDf.time = posDf.time-posDf.time[0]
-    dtDf.time = dtDf.time-dtDf.time[0]
+    if len(posDf) > 0: posDf.time = posDf.time-posDf.time[0]
+    if len(dtDf) > 0: dtDf.time = dtDf.time-dtDf.time[0]
     if len(pdDf) > 0:
         pdDf.time = pdDf.time-pdDf.time[0]
 
