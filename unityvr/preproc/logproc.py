@@ -200,9 +200,10 @@ def objDfFromLog(dat):
                     'sy': match['worldScale']['z'],
                     'sz': match['worldScale']['y']}
         entries[entry] = pd.Series(framedat).to_frame().T
-    objDf = pd.concat(entries,ignore_index = True)
-
-    return objDf
+    if len(entries) > 0:
+        return pd.concat(entries,ignore_index = True)
+    else:
+        return pd.DataFrame()
 
 
 def posDfFromLog(dat):
