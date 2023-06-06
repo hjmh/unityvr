@@ -15,6 +15,7 @@ ftDfCols = ['frame','ficTracTReadMs','ficTracTWriteMs','dx','dy','dz']
 dtDfCols = ['frame','time','dt']
 nidDfCols = ['frame','time','dt','pdsig','imgfsig']
 texDfCols = ['frame','time','xtex','ytex']
+vidDfCols = ['frame','time','img','duration']
 # Data class definition
 
 @dataclass
@@ -31,6 +32,7 @@ class unityVRexperiment:
     ftDf: pd.DataFrame = pd.DataFrame(columns=ftDfCols)
     nidDf: pd.DataFrame = pd.DataFrame(columns=nidDfCols)
     texDf: pd.DataFrame = pd.DataFrame(columns=texDfCols)
+    vidDf: pd.DataFrame = pd.DataFrame(columns=vidDfCols)
     shapeDf: pd.DataFrame = pd.DataFrame()
     timeDf: pd.DataFrame = pd.DataFrame()
 
@@ -66,22 +68,63 @@ class unityVRexperiment:
         self.ftDf.to_csv(sep.join([savepath,'ftDf.csv']))
         self.nidDf.to_csv(sep.join([savepath,'nidDf.csv']))
         self.texDf.to_csv(sep.join([savepath,'texDf.csv']))
+        self.vidDf.to_csv(sep.join([savepath,'vidDf.csv']))
         self.shapeDf.to_csv(sep.join([savepath,'shapeDf.csv']))
         self.timeDf.to_csv(sep.join([savepath,'timeDf.csv']))
 
         return savepath
 
+# extract all dataframes from log file and save to disk
+def convertJsonToPandas(dirName,fileName,saveDir, computeNiDf):
+
+    dat = openUnityLog(dirName, fileName)
+    metadat = makeMetaDict(dat, fileName)
+
+    saveName = (metadat['expid']).split('_')[-1] + '/' + metadat['trial']
+    savepath = sep.join([saveDir,saveName,'uvr'])
+
+    # make directory
+    if not exists(savepath): makedirs(savepath)
+
+    # save metadata
+    with open(sep.join([savepath,'metadata.json']), 'w') as outfile:
+        json.dump(metadat, outfile,indent=4)
+
+    # construct and save object dataframe
+    objDf = objDfFromLog(dat)
+    objDf.to_csv(sep.join([savepath,'objDf.csv']))
+
+    # construct and save position and velocity dataframes
+    posDf, ftDf, nidDf = timeseriesDfFromLog(dat, computeNiDf)
+    posDf.to_csv(sep.join([savepath,'posDf.csv']))
+    del posDf 
+    ftDf.to_csv(sep.join([savepath,'ftDf.csv']))
+    del ftDf 
+    if computeNiDf: nidDf.to_csv(sep.join([savepath,'nidDf.csv']))
+    del nidDf 
+
+    # construct and save texture dataframes
+    texDf = texDfFromLog(dat)
+    vidDf = vidDfFromLog(dat)
+    texDf.to_csv(sep.join([savepath,'texDf.csv']))
+    del texDf 
+    vidDf.to_csv(sep.join([savepath,'vidDf.csv']))
+    del vidDf 
+
+    return savepath
+
 # constructor for unityVRexperiment
-def constructUnityVRexperiment(dirName,fileName,imaging=False,test=False):
+def constructUnityVRexperiment(dirName,fileName):
 
     dat = openUnityLog(dirName, fileName)
 
     metadat = makeMetaDict(dat, fileName)
     objDf = objDfFromLog(dat)
-    posDf, ftDf, nidDf = timeseriesDfFromLog(dat)
+    posDf, ftDf, nidDf = timeseriesDfFromLog(dat, computeNiDf=True)
     texDf = texDfFromLog(dat)
+    vidDf = vidDfFromLog(dat)
 
-    uvrexperiment = unityVRexperiment(metadata=metadat,posDf=posDf,ftDf=ftDf,nidDf=nidDf,objDf=objDf,texDf=texDf)
+    uvrexperiment = unityVRexperiment(metadata=metadat,posDf=posDf,ftDf=ftDf,nidDf=nidDf,objDf=objDf,texDf=texDf, vidDf=vidDf)
 
     return uvrexperiment
 
@@ -96,24 +139,25 @@ def loadUVRData(savepath):
     ftDf = pd.read_csv(sep.join([savepath,'ftDf.csv'])).drop(columns=['Unnamed: 0'])
     nidDf = pd.read_csv(sep.join([savepath,'nidDf.csv'])).drop(columns=['Unnamed: 0'])
 
-
-    try:
-        texDf = pd.read_csv(sep.join([savepath,'texDf.csv'])).drop(columns=['Unnamed: 0'])
+    try: texDf = pd.read_csv(sep.join([savepath,'texDf.csv'])).drop(columns=['Unnamed: 0'])
     except FileNotFoundError:
         texDf = pd.DataFrame()
         #No texture mapping time series was recorded with this experiment, fill with empty DataFrame
 
-    try:
-        shapeDf = pd.read_csv(sep.join([savepath,'shapeDf.csv'])).drop(columns=['Unnamed: 0'])
+    try: vidDf = pd.read_csv(sep.join([savepath,'vidDf.csv'])).drop(columns=['Unnamed: 0'])
+    except FileNotFoundError:
+        vidDf = pd.DataFrame()
+        #No static images were displayed, fill with empty DataFrame
+
+    try: shapeDf = pd.read_csv(sep.join([savepath,'shapeDf.csv'])).drop(columns=['Unnamed: 0'])
     except FileNotFoundError:
         shapeDf = pd.DataFrame()
         #Shape dataframe was not computed. Fill with empty DataFrame
 
-    try:
-        timeDf = pd.read_csv(sep.join([savepath,'timeDf.csv'])).drop(columns=['Unnamed: 0'])
+    try: timeDf = pd.read_csv(sep.join([savepath,'timeDf.csv'])).drop(columns=['Unnamed: 0'])
     except FileNotFoundError:
         timeDf = pd.DataFrame()
-        #Shape dataframe was not computed. Fill with empty DataFrame
+        #Time dataframe was not computed. Fill with empty DataFrame
 
     uvrexperiment = unityVRexperiment(metadata=metadat,posDf=posDf,ftDf=ftDf,nidDf=nidDf,objDf=objDf,texDf=texDf,shapeDf=shapeDf,timeDf=timeDf)
 
@@ -128,6 +172,7 @@ def parseHeader(notes, headerwords, metadat):
 
     return metadat
 
+
 def makeMetaDict(dat, fileName):
     headerwords = ["expid", "experiment", "genotype","flyid","sex","notes","\n"]
     metadat = ['testExp', 'test experiment', 'testGenotype', 'NA', 'NA', "NA"]
@@ -140,7 +185,7 @@ def makeMetaDict(dat, fileName):
 
     matching = [s for s in dat if "ficTracBallRadius" in s]
     if len(matching) == 0:
-        print('no fictract metadata')
+        print('no fictrac metadata')
         ballRad = 0.0
     else:
         ballRad = matching[0]["ficTracBallRadius"]
@@ -248,6 +293,7 @@ def ftDfFromLog(dat):
     else:
         return pd.DataFrame()
 
+
 def dtDfFromLog(dat):
     # get delta time info
     matching = [s for s in dat if "deltaTime" in s]
@@ -280,6 +326,7 @@ def pdDfFromLog(dat):
     else:
         return pd.DataFrame()
 
+
 def texDfFromLog(dat):
     # get texture remapping log
     matching = [s for s in dat if "xpos" in s]
@@ -305,7 +352,26 @@ def texDfFromLog(dat):
         return texDf
     else:
         return pd.DataFrame()
-    
+
+
+def vidDfFromLog(dat):
+    # get static image presentations and times
+    matching = [s for s in dat if "backgroundTextureNowInUse" in s]
+    if len(matching) == 0: return pd.DataFrame()
+
+    entries = [None]*len(matching)
+    for entry, match in enumerate(matching):
+        framedat = {'frame': match['frame'],
+                    'time': match['timeSecs'],
+                    'img': match['backgroundTextureNowInUse'].split('/')[-1],
+                    'duration': match['durationSecs']}
+        entries[entry] = pd.Series(framedat).to_frame().T
+
+    if len(entries) > 0:
+        return pd.concat(entries,ignore_index = True)
+    else:
+        return pd.DataFrame()
+
 
 def ftTrajDfFromLog(directory, filename):
     cols = [14,15,16,17,18]
@@ -313,7 +379,7 @@ def ftTrajDfFromLog(directory, filename):
     ftTrajDf = pd.read_csv(directory+"/"+filename,usecols=cols,names=colnames)
     return ftTrajDf
 
-def timeseriesDfFromLog(dat):
+def timeseriesDfFromLog(dat, computeNiDf = True):
     from scipy.signal import medfilt
 
     posDf = pd.DataFrame(columns=posDfCols)
@@ -324,15 +390,14 @@ def timeseriesDfFromLog(dat):
     posDf = posDfFromLog(dat)
     ftDf = ftDfFromLog(dat)
     dtDf = dtDfFromLog(dat)
-    try:
-        pdDf = pdDfFromLog(dat)
-    except:
-        print("No analog input data was recorded.")
+
+    if computeNiDf:
+        try: pdDf = pdDfFromLog(dat)
+        except: print("No analog input data was recorded.")
 
     if len(posDf) > 0: posDf.time = posDf.time-posDf.time[0]
     if len(dtDf) > 0: dtDf.time = dtDf.time-dtDf.time[0]
-    if len(pdDf) > 0:
-        pdDf.time = pdDf.time-pdDf.time[0]
+    if len(pdDf) > 0: pdDf.time = pdDf.time-pdDf.time[0]
 
     if len(ftDf) > 0:
         ftDf.ficTracTReadMs = ftDf.ficTracTReadMs-ftDf.ficTracTReadMs[0]
@@ -340,11 +405,10 @@ def timeseriesDfFromLog(dat):
     else:
         print("No fictrac signal was recorded.")
 
-    posDf = pd.merge(dtDf, posDf, on="frame", how='outer').rename(columns={'time_x':'time'}).drop(['time_y'],axis=1)
+    if len(dtDf) > 0: posDf = pd.merge(dtDf, posDf, on="frame", how='outer').rename(columns={'time_x':'time'}).drop(['time_y'],axis=1)
 
-    if len(pdDf) > 0:
+    if len(pdDf) > 0 and len(dtDf) > 0:
         nidDf = pd.merge(dtDf, pdDf, on="frame", how='outer').rename(columns={'time_x':'time'}).drop(['time_y'],axis=1)
-
         nidDf["pdFilt"]  = nidDf.pdsig.values
         nidDf.pdFilt.values[np.isfinite(nidDf.pdsig.values)] = medfilt(nidDf.pdsig.values[np.isfinite(nidDf.pdsig.values)])
         nidDf["pdThresh"]  = 1*(np.asarray(nidDf.pdFilt>=np.nanmedian(nidDf.pdFilt.values)))
@@ -355,7 +419,7 @@ def timeseriesDfFromLog(dat):
 
         nidDf = generateInterTime(nidDf)
     else:
-        nidDf = posDf
+        nidDf = pd.DataFrame()
 
     return posDf, ftDf, nidDf
 
