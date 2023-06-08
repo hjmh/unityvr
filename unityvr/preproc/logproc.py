@@ -158,8 +158,14 @@ def loadUVRData(savepath):
     except FileNotFoundError:
         timeDf = pd.DataFrame()
         #Time dataframe was not computed. Fill with empty DataFrame
+    
+    try: nidDf = pd.read_csv(sep.join([savepath,'nidDf.csv'])).drop(columns=['Unnamed: 0'])
+    except FileNotFoundError:
+        nidDf = pd.DataFrame()
+        #Nidaq dataframe may not have been extracted from the raw data due to memory/time constraints
 
-    uvrexperiment = unityVRexperiment(metadata=metadat,posDf=posDf,ftDf=ftDf,nidDf=nidDf,objDf=objDf,texDf=texDf,shapeDf=shapeDf,timeDf=timeDf)
+    uvrexperiment = unityVRexperiment(metadata=metadat,posDf=posDf,ftDf=ftDf,nidDf=nidDf,\
+                                      objDf=objDf,texDf=texDf,shapeDf=shapeDf,timeDf=timeDf, vidDf=vidDf)
 
     return uvrexperiment
 
