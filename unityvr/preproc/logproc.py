@@ -315,7 +315,7 @@ def dtDfFromLog(dat):
         return pd.DataFrame()
 
 
-def pdDfFromLog(dat, computePDtrace=True):
+def pdDfFromLog(dat, computePDtrace):
     # get NiDaq signal
     matching = [s for s in dat if "tracePD" in s]
     entries = [None]*len(matching)
@@ -332,7 +332,10 @@ def pdDfFromLog(dat, computePDtrace=True):
         entries[entry] = pd.Series(framedat).to_frame().T
 
     if len(entries) > 0:
-        pdDf = pd.concat(entries,ignore_index = True).pdDf[['frame', 'time','imgfsig']].drop_duplicates()
+        if computePDtrace:
+            pdDf = pd.concat(entries,ignore_index = True)[['frame', 'time', 'pdsig', 'imgfsig']].drop_duplicates()
+        else:
+            pdDf = pd.concat(entries,ignore_index = True)[['frame', 'time','imgfsig']].drop_duplicates()
         return pdDf
     else:
         return pd.DataFrame()
@@ -390,7 +393,7 @@ def ftTrajDfFromLog(directory, filename):
     ftTrajDf = pd.read_csv(directory+"/"+filename,usecols=cols,names=colnames)
     return ftTrajDf
 
-def timeseriesDfFromLog(dat, computePDtrace = True):
+def timeseriesDfFromLog(dat, computePDtrace):
     from scipy.signal import medfilt
 
     posDf = pd.DataFrame(columns=posDfCols)
@@ -405,7 +408,7 @@ def timeseriesDfFromLog(dat, computePDtrace = True):
     ftDf = ftDfFromLog(dat)
     dtDf = dtDfFromLog(dat)
 
-    try: pdDf = pdDfFromLog(dat, computePDtrace=True)
+    try: pdDf = pdDfFromLog(dat, computePDtrace)
     except: print("No analog input data was recorded.")
 
     if len(posDf) > 0: posDf.time = posDf.time-posDf.time[0]
