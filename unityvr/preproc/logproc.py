@@ -75,7 +75,7 @@ class unityVRexperiment:
         return savepath
 
 # extract all dataframes from log file and save to disk
-def convertJsonToPandas(dirName,fileName,saveDir, computeNiDf):
+def convertJsonToPandas(dirName,fileName,saveDir, computePDtrace):
 
     dat = openUnityLog(dirName, fileName)
     metadat = makeMetaDict(dat, fileName)
@@ -95,12 +95,12 @@ def convertJsonToPandas(dirName,fileName,saveDir, computeNiDf):
     objDf.to_csv(sep.join([savepath,'objDf.csv']))
 
     # construct and save position and velocity dataframes
-    posDf, ftDf, nidDf = timeseriesDfFromLog(dat, computeNiDf)
+    posDf, ftDf, nidDf = timeseriesDfFromLog(dat, computePDtrace)
     posDf.to_csv(sep.join([savepath,'posDf.csv']))
     del posDf 
     ftDf.to_csv(sep.join([savepath,'ftDf.csv']))
     del ftDf 
-    if computeNiDf: nidDf.to_csv(sep.join([savepath,'nidDf.csv']))
+    nidDf.to_csv(sep.join([savepath,'nidDf.csv']))
     del nidDf 
 
     # construct and save texture dataframes
@@ -120,7 +120,7 @@ def constructUnityVRexperiment(dirName,fileName):
 
     metadat = makeMetaDict(dat, fileName)
     objDf = objDfFromLog(dat)
-    posDf, ftDf, nidDf = timeseriesDfFromLog(dat, computeNiDf=True)
+    posDf, ftDf, nidDf = timeseriesDfFromLog(dat, computePDtrace=True)
     texDf = texDfFromLog(dat)
     vidDf = vidDfFromLog(dat)
 
@@ -315,19 +315,25 @@ def dtDfFromLog(dat):
         return pd.DataFrame()
 
 
-def pdDfFromLog(dat):
+def pdDfFromLog(dat, computePDtrace=True):
     # get NiDaq signal
     matching = [s for s in dat if "tracePD" in s]
     entries = [None]*len(matching)
     for entry, match in enumerate(matching):
-        framedat = {'frame': match['frame'],
+        if computePDtrace:
+            framedat = {'frame': match['frame'],
+                        'time': match['timeSecs'],
+                        'pdsig': match['tracePD'],
+                        'imgfsig': match['imgFrameTrigger']}
+        else:
+            framedat = {'frame': match['frame'],
                     'time': match['timeSecs'],
-                    'pdsig': match['tracePD'],
                     'imgfsig': match['imgFrameTrigger']}
         entries[entry] = pd.Series(framedat).to_frame().T
 
     if len(entries) > 0:
-        return pd.concat(entries,ignore_index = True)
+        pdDf = pd.concat(entries,ignore_index = True).pdDf[['frame', 'time','imgfsig']].drop_duplicates()
+        return pdDf
     else:
         return pd.DataFrame()
 
@@ -384,21 +390,23 @@ def ftTrajDfFromLog(directory, filename):
     ftTrajDf = pd.read_csv(directory+"/"+filename,usecols=cols,names=colnames)
     return ftTrajDf
 
-def timeseriesDfFromLog(dat, computeNiDf = True):
+def timeseriesDfFromLog(dat, computePDtrace = True):
     from scipy.signal import medfilt
 
     posDf = pd.DataFrame(columns=posDfCols)
     ftDf = pd.DataFrame(columns=ftDfCols)
     dtDf = pd.DataFrame(columns=dtDfCols)
-    pdDf = pd.DataFrame(columns = ['frame','time','pdsig', 'imgfsig'])
+    if computePDtrace:
+        pdDf = pd.DataFrame(columns = ['frame','time','pdsig', 'imgfsig'])
+    else:
+        pdDf = pd.DataFrame(columns = ['frame','time', 'imgfsig'])
 
     posDf = posDfFromLog(dat)
     ftDf = ftDfFromLog(dat)
     dtDf = dtDfFromLog(dat)
 
-    if computeNiDf:
-        try: pdDf = pdDfFromLog(dat)
-        except: print("No analog input data was recorded.")
+    try: pdDf = pdDfFromLog(dat, computePDtrace=True)
+    except: print("No analog input data was recorded.")
 
     if len(posDf) > 0: posDf.time = posDf.time-posDf.time[0]
     if len(dtDf) > 0: dtDf.time = dtDf.time-dtDf.time[0]
@@ -414,9 +422,10 @@ def timeseriesDfFromLog(dat, computeNiDf = True):
 
     if len(pdDf) > 0 and len(dtDf) > 0:
         nidDf = pd.merge(dtDf, pdDf, on="frame", how='outer').rename(columns={'time_x':'time'}).drop(['time_y'],axis=1)
-        nidDf["pdFilt"]  = nidDf.pdsig.values
-        nidDf.pdFilt.values[np.isfinite(nidDf.pdsig.values)] = medfilt(nidDf.pdsig.values[np.isfinite(nidDf.pdsig.values)])
-        nidDf["pdThresh"]  = 1*(np.asarray(nidDf.pdFilt>=np.nanmedian(nidDf.pdFilt.values)))
+        if computePDtrace:
+            nidDf["pdFilt"]  = nidDf.pdsig.values
+            nidDf.pdFilt.values[np.isfinite(nidDf.pdsig.values)] = medfilt(nidDf.pdsig.values[np.isfinite(nidDf.pdsig.values)])
+            nidDf["pdThresh"]  = 1*(np.asarray(nidDf.pdFilt>=np.nanmedian(nidDf.pdFilt.values)))
 
         nidDf["imgfFilt"]  = nidDf.imgfsig.values
         nidDf.imgfFilt.values[np.isfinite(nidDf.imgfsig.values)] = medfilt(nidDf.imgfsig.values[np.isfinite(nidDf.imgfsig.values)])

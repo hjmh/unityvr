@@ -13,7 +13,7 @@ def preprocessUnityVRlogs(rootDir, dataDir):
 
     for fileName in fileNames:
         print(fileName  + '\n')
-        savepath =  lp.convertJsonToPandas(dirName,fileName,preprocDir, computeNiDf=False)
+        savepath =  lp.convertJsonToPandas(dirName,fileName,preprocDir, computePDtrace=False)
         #uvrTrial = lp.constructUnityVRexperiment(dirName,fileName)
         #uvrTrial.printMetadata()
         #savepath = uvrTrial.saveData(preprocDir, (uvrTrial.metadata['expid']).split('_')[-1] + '/' + uvrTrial.metadata['trial'])
