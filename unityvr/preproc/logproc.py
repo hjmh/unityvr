@@ -432,7 +432,7 @@ def timeseriesDfFromLog(dat, computePDtrace):
 
         nidDf["imgfFilt"]  = nidDf.imgfsig.values
         nidDf.imgfFilt.values[np.isfinite(nidDf.imgfsig.values)] = medfilt(nidDf.imgfsig.values[np.isfinite(nidDf.imgfsig.values)])
-        nidDf["imgfThresh"]  = 1*(np.asarray(nidDf.imgfFilt.values>=np.nanmedian(nidDf.imgfFilt.values)))
+        nidDf["imgfThresh"]  = 1*(np.asarray(nidDf.imgfFilt.values>=np.nanmedian(nidDf.imgfFilt.values))).astype(np.int8)
 
         nidDf = generateInterTime(nidDf)
     else:
@@ -445,18 +445,19 @@ def generateInterTime(tsDf):
     from scipy import interpolate
 
     tsDf['framestart'] = np.hstack([0,1*np.diff(tsDf.time)>0])
+    #tsDf['framestart'] = tsDf.framestart.astype(bool)
 
     tsDf['counts'] = 1
+    #tsDf['counts'] = tsDf.counts.astype(np.int8)
     sampperframe = tsDf.groupby('frame').sum()[['time','dt','counts']].reset_index(level=0)
     sampperframe['fs'] = sampperframe.counts/sampperframe.dt
 
     frameStartIndx = np.hstack((0,np.where(tsDf.framestart)[0]))
     frameStartIndx = np.hstack((frameStartIndx, frameStartIndx[-1]+sampperframe.counts.values[-1]-1))
     frameIndx = tsDf.index.values
+    del sampperframe
 
     frameNums = tsDf.frame[frameStartIndx].values.astype('int')
-    frameNumsInterp = np.hstack((frameNums, frameNums[-1]+1))
-
     timeAtFramestart = tsDf.time[frameStartIndx].values
 
     #generate interpolated frames
