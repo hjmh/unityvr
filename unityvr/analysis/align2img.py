@@ -53,6 +53,7 @@ def combineImagingAndPosDf(imgDat, posDf, volFramePos):
         if lendiff > 0: expDf = expDf[:-lendiff]
         elif lendiff < 0: volFramePos = volFramePos[:lendiff]
     expDf['posTime'] = posDf.time.values[volFramePos]
+    expDf['frame'] = posDf.frame.values[volFramePos]
     expDf['x'] = posDf.x.values[volFramePos]
     expDf['y'] = posDf.y.values[volFramePos]
     expDf['angle'] = posDf.angle.values[volFramePos]
@@ -99,11 +100,7 @@ def combineImagingAndPosDf(imgDat, posDf, volFramePos):
 def loadAndAlignPreprocessedData(root, subdir, flies, conditions, trials, panDefs, condtype, img = 'img', vr = 'uvr'):
     allExpDf = pd.DataFrame()
     for f, fly in enumerate(flies):
-
         print(fly)
-        flyStatsdf = pd.DataFrame(columns=['fly','condition','circmean','circvar','circvarPVA','circmeanCorr'])
-        flyStats = np.ones((4, len(conditions)))*np.nan
-        condlabel = []
         for c, cond in enumerate(conditions):
 
             for t, trial in enumerate(trials):

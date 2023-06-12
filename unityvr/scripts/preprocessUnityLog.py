@@ -33,3 +33,4 @@ if __name__ == "__main__":
         preprocessUnityVRlogs(sys.argv[1],sys.argv[2])
 
     print("\n all done!")
+    
