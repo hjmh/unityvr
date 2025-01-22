@@ -186,10 +186,10 @@ def savgolFilterInterpolated(posDf, value, window, order, timeStr = 'time', kind
         #interpolating the data to be evenly spaced
         interpolated = sp.interpolate.interp1d(df[timeStr], df[value], kind=kind, bounds_error=False, fill_value='extrapolate')
 
-        equalTime = np.linspace(df[timeStr].min(),df[timeStr].max(),len(df[timeStr]))
+        equalTime = np.linspace(df[timeStr].min(),df[timeStr].max(),2*len(df[timeStr]))
 
         filt = savgol_filter(interpolated(equalTime), window, order)
 
-        filtInterpolated = sp.interpolate.interp1d(equalTime, filt, kind=kind, bounds_error=False, fill_value='extrapolate')
+        filtInterpolated = sp.interpolate.interp1d(equalTime, filt, kind='nearest', bounds_error=False, fill_value='extrapolate')
 
         return filtInterpolated(df.time)
