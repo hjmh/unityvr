@@ -11,8 +11,9 @@ import json
 objDfCols = ['name','collider','px','py','pz','rx','ry','rz','sx','sy','sz']
 
 posDfCols = ['frame','time','x','y','angle']
-ftDfCols = ['frame','ficTracTReadMs','ficTracTWriteMs','dx','dy','dz']
+ftDfCols = ['frame','ficTracTReadMs','ficTracTWriteMs','wx_ft','wy_ft','wz_ft']
 dtDfCols = ['frame','time','dt']
+tempDfCols = ['frame','time','temperature']
 nidDfCols = ['frame','time','dt','pdsig','imgfsig']
 texDfCols = ['frame','time','xtex','ytex']
 vidDfCols = ['frame','time','img','duration']
@@ -266,10 +267,10 @@ def posDfFromLog(dat):
                         'x': match['worldPosition']['x'],
                         'y': match['worldPosition']['z'], #axes are named differently in Unity
                         'angle': (-match['worldRotationDegs']['y'])%360, #flip due to left handed convention in Unity
-                        'dx':match['actualTranslation']['x'],
-                        'dy':match['actualTranslation']['z'],
-                        'dxattempt': match['attemptedTranslation']['x'],
-                        'dyattempt': match['attemptedTranslation']['z']
+                        'dx_ft':match['actualTranslation']['x'], #forward motion
+                        'dy_ft':match['actualTranslation']['z'], #right sideslip
+                        'dxattempt_ft': match['attemptedTranslation']['x'],
+                        'dyattempt_ft': match['attemptedTranslation']['z']
                        }
         entries[entry] = pd.Series(framedat).to_frame().T
     print('correcting for Unity angle convention.')
@@ -288,9 +289,9 @@ def ftDfFromLog(dat):
         framedat = {'frame': match['frame'],
                         'ficTracTReadMs': match['ficTracTimestampReadMs'],
                         'ficTracTWriteMs': match['ficTracTimestampWriteMs'],
-                        'dx': match['ficTracDeltaRotationVectorLab']['x'],
-                        'dy': match['ficTracDeltaRotationVectorLab']['y'],
-                        'dz': match['ficTracDeltaRotationVectorLab']['z']}
+                        'wx_ft': match['ficTracDeltaRotationVectorLab']['x'],
+                        'wy_ft': match['ficTracDeltaRotationVectorLab']['y'],
+                        'wz_ft': match['ficTracDeltaRotationVectorLab']['z']}
         entries[entry] = pd.Series(framedat).to_frame().T
 
     if len(entries) > 0:
